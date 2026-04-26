@@ -1,6 +1,6 @@
 # 🚗 TARA Pipeline: Automotive Security Test Generator
 
-> **Transform TARA attack trees into executable automotive security test scripts with AI-powered code generation**
+> **Transform TARA attack trees into executable automotive security test scripts with LLM code generation**
 
 ## 🚀 Quick Start
 
