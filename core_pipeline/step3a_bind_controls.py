@@ -38,7 +38,7 @@ from pipeline_types import (
 # bus_address, ...) that system_model leaves abstract. Merging at prompt
 # build time prevents the LLM from inventing discovery field names like
 # `reachable_address_range` to compensate for missing host/port grounding.
-_TESTBED_PATH = Path(__file__).resolve().parent / "inputs" / "testbed_config.json"
+_TESTBED_PATH = Path(__file__).resolve().parent.parent / "inputs" / "testbed_config.json"
 _testbed_cache: dict | None = None
 
 
@@ -277,24 +277,12 @@ def stub_bind(
     path: AttackPath,
     plan_steps: list[StepPlan] | None = None,
 ) -> PathControlBinding:
-    controls: list[ControlRef] = [
-        ControlRef(source_type="cc_sfr", source_id=cid) for cid in path.cc_sfr
-    ] + [
-        ControlRef(source_type="nist_sp_800_53", source_id=cid) for cid in path.nist_sp_800_53
-    ]
+    # Control mode completely disabled - no controls processed
+    controls: list[ControlRef] = []  # Empty control list
 
-    # step_id -> list[ControlRef]
+    # No control assignments for any steps
     assignments: dict[str, list[ControlRef]] = {s.step_id: [] for s in path.steps}
-    unassigned: list[ControlRef] = []
-
-    for ctrl in controls:
-        matched_any = False
-        for step in path.steps:
-            if _matches(ctrl.source_id, _step_text(step)):
-                assignments[step.step_id].append(ctrl)
-                matched_any = True
-        if not matched_any:
-            unassigned.append(ctrl)
+    unassigned: list[ControlRef] = []  # No unassigned controls
 
     # Emit one StepBinding per step so every step carries a target_binding
     # (even if no controls matched). target_binding is always
@@ -307,12 +295,29 @@ def stub_bind(
     bindings: list[StepBinding] = []
     for step in path.steps:
         assigned = assignments[step.step_id]
-        rationale = (
-            "deterministic keyword match on step description/protocol"
-            if assigned
-            else "no keyword match; assigned_controls left empty"
+        rationale = "control mode disabled - endpoint binding only"
+        # Always create proper target binding with testbed_config merge
+        tb = TargetBinding(
+            binding_status="bound",
+            protocol=step.connection.protocol if step.connection else "",
+            endpoint={},
+            target_ref={},
+            evidence_basis=[],
         )
-        tb = _stub_target_binding(step)
+        # Apply post-processing to inject testbed_config values
+        tb = _inject_connection_addressing(tb, step)
+
+        # DEBUG: Print what was merged
+        print(f"DEBUG: Step {step.step_id}, connection_id: {step.connection.connection_id if step.connection else 'None'}")
+        print(f"DEBUG: Endpoint after merge: {tb.endpoint}")
+        print("DEBUG: ----")
+
+        # Copy execution spec from Step 2 if available
+        if step.step_id in plan_by_id:
+            sp = plan_by_id[step.step_id]
+            tb.runtime_discovery_fields = list(sp.runtime_discovery_fields or [])
+            tb.attack_actions = list(sp.attack_actions or [])
+            tb.produces_for_next = [ar.copy() for ar in (sp.produces_for_next or [])]
         # P6 Phase B: even in stub mode, propagate the execution spec from
         # step2 so downstream verifier rules (obligations / discovery /
         # produces_for_next) have something to check against. The grounding

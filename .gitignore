@@ -26,6 +26,7 @@ config/secrets.json
 
 # Output directories
 output/
+output_test*/
 cache/
 logs/
 *.log

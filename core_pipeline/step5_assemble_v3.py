@@ -117,9 +117,24 @@ def main():
 {step_tuples}
     ]
 
+    step_chain_failed = False
+
     for step_id, fn in steps:
         print(f"=== {{step_id}} ===")
         entry = {{"step_id": step_id}}
+
+        # Skip remaining steps if attack chain already failed
+        if step_chain_failed:
+            print(f"  [SKIPPED] Previous step in attack chain failed")
+            entry["status"] = "skipped_chain_failure"
+            entry["error"] = {{"type": "ChainFailure",
+                              "message": "Skipped due to previous step failure in attack chain"}}
+            entry["observations"] = []
+            entry["artifacts"] = {{}}
+            entry["notes"] = "Skipped - prerequisite step failed"
+            _compat_shim(entry)
+            record["steps"].append(entry)
+            continue
 
         value, err, timed_out = _run_with_timeout(fn, context, artifacts)
 
@@ -131,6 +146,7 @@ def main():
             entry["_timeout"] = True
             _compat_shim(entry)
             record["steps"].append(entry)
+            step_chain_failed = True  # Mark chain as failed
             continue
 
         if err is not None:
@@ -140,6 +156,7 @@ def main():
             entry["error"] = {{"type": type(err).__name__, "message": str(err)}}
             _compat_shim(entry)
             record["steps"].append(entry)
+            step_chain_failed = True  # Mark chain as failed
             continue
 
         if not isinstance(value, dict):
@@ -149,6 +166,7 @@ def main():
                               "message": f"expected dict, got {{type(value).__name__}}"}}
             _compat_shim(entry)
             record["steps"].append(entry)
+            step_chain_failed = True  # Mark chain as failed
             continue
 
         observations = value.get("observations") or []
