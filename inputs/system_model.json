@@ -1,0 +1,656 @@
+{
+  "asset_aliases": {
+    "UCONNECT_Cellular_Channel": "UCONNECT_Cellular_Channel",
+    "UCONNECT_DBus_Service": "UCONNECT_DBus_Service",
+    "V850_Firmware_Channel": "V850_Firmware_Channel",
+    "CAN_C_Bus": "CAN_C_Bus",
+    "CAN_IHS_Bus": "CAN_IHS_Bus"
+  },
+  "item": {
+    "id": "ITEM_UCONNECT_JEEP_TARA",
+    "name": "Harman Uconnect IVI / Jeep Cherokee (TARA-aligned model)",
+    "description": "System model aligned to the Jeep Cherokee remote exploitation chain. It keeps both hardened target state and vulnerable whitepaper state explicit so attack scripts can validate selected controls."
+  },
+  "security_modes": {
+    "hardened_target_state": "Controls selected for the target TAF are enabled.",
+    "whitepaper_vulnerable_state": "Settings approximate the attack preconditions described in the 2015 whitepaper."
+  },
+  "components": [
+    {
+      "id": "Attacker_Endpoint",
+      "name": "Remote Attacker Workstation",
+      "type": "External_Actor",
+      "description": "External adversary node used as the origin of carrier-reachable discovery, D-Bus access attempts, and later-stage exploit traffic in the reconstructed Jeep Cherokee attack chain.",
+      "interfaces": [
+        {
+          "id": "Carrier_Client_IF",
+          "type": "Network",
+          "protocol": "TCP/IP",
+          "description": "Remote client interface able to reach the exposed carrier-side service path.",
+          "connected_to": [
+            "Cellular_Network"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OMAP_Processor",
+      "name": "OMAP IVI Processor (Head Unit)",
+      "type": "ECU",
+      "description": "Main application processor of the Uconnect head unit. Runs QNX OS. Hosts D-Bus service on TCP 6667 without authentication, running as root. Entry point for remote exploitation via cellular network.",
+      "interfaces": [
+        {
+          "id": "Cellular_IF",
+          "type": "Network",
+          "protocol": "TCP/IP",
+          "description": "Cellular modem interface (Sprint/LTE). TCP port 6667 open without firewall restriction. Allows unauthenticated D-Bus access from any device on the same carrier network.",
+          "connected_to": [
+            "Cellular_Network"
+          ]
+        },
+        {
+          "id": "WiFi_IF",
+          "type": "Network",
+          "protocol": "WiFi / WPA2",
+          "description": "Optional WiFi hotspot interface. WPA2 password generated from vehicle boot time (predictable, brute-forceable).",
+          "connected_to": [
+            "WiFi_Client"
+          ]
+        },
+        {
+          "id": "DBus_IF",
+          "type": "IPC",
+          "protocol": "D-Bus over TCP",
+          "description": "D-Bus IPC service on TCP 6667. No authentication enabled. Runs as root (UID 0). Exposes GPS, HVAC, Radio, Display control interfaces.",
+          "connected_to": [
+            "Cellular_IF",
+            "WiFi_IF"
+          ]
+        },
+        {
+          "id": "SPI_IF",
+          "type": "SPI",
+          "protocol": "SPI (Serial Peripheral Interface)",
+          "description": "SPI bus connecting OMAP processor to V850 MCU. Used for firmware flashing and runtime CAN message forwarding. No firmware signature verification enforced.",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        },
+        {
+          "id": "OTA_IF",
+          "type": "Network",
+          "protocol": "TCP/IP / HTTPS",
+          "description": "OTA firmware update channel. Firmware packages accepted without cryptographic signature verification.",
+          "connected_to": [
+            "OTA_Server"
+          ]
+        }
+      ],
+      "initial_state": {
+        "dbus_auth_enabled": true,
+        "port_6667_restricted": true,
+        "ota_sig_verify_enabled": true,
+        "tls_enforcement": true,
+        "cipher_strength": true,
+        "service_runs_as_root": false
+      },
+      "compromise_indicators": {
+        "dbus_auth_enabled": false,
+        "port_6667_restricted": false,
+        "running_as_root": true
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "dbus_auth_enabled": true,
+          "port_6667_restricted": true,
+          "service_runs_as_root": false,
+          "ota_sig_verify_enabled": true,
+          "tls_enforcement": true
+        },
+        "whitepaper_vulnerable_state": {
+          "dbus_auth_enabled": false,
+          "port_6667_restricted": false,
+          "service_runs_as_root": true,
+          "ota_sig_verify_enabled": false,
+          "tls_enforcement": false
+        }
+      },
+      "state_schema_note": "security_state_profiles keys are authoritative for hardened/vulnerable comparisons; initial_state uses the same key names."
+    },
+    {
+      "id": "V850_MCU",
+      "name": "Renesas V850 MCU (CAN Bridge)",
+      "type": "MCU",
+      "description": "Renesas V850 microcontroller that bridges the OMAP processor to CAN-C and CAN-IHS buses. Firmware flashable via SPI without signature verification. When compromised, enables arbitrary CAN message injection to safety-critical ECUs.",
+      "interfaces": [
+        {
+          "id": "SPI_V850_IF",
+          "type": "SPI",
+          "protocol": "SPI",
+          "description": "SPI interface receiving firmware and runtime commands from OMAP. No code signing enforced on firmware updates.",
+          "connected_to": [
+            "OMAP_Processor"
+          ]
+        },
+        {
+          "id": "CAN_C_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-C bus interface. Connected to safety-critical ECUs: ABS (anti-lock brakes), EPS (electric power steering), TCM (transmission control), PCM (powertrain control).",
+          "connected_to": [
+            "ABS_ECU",
+            "EPS_ECU",
+            "TCM_ECU",
+            "PCM_ECU"
+          ]
+        },
+        {
+          "id": "CAN_IHS_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-IHS (Interior High Speed) bus interface. Connected to infotainment ECUs: HVAC, Audio Amplifier, Door Control.",
+          "connected_to": [
+            "HVAC_ECU",
+            "AMP_ECU",
+            "DDM_ECU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "firmware_integrity_verification": true,
+        "signed_update_required": true,
+        "arbitrary_can_c_tx_allowed": false,
+        "arbitrary_can_ihs_tx_allowed": false
+      },
+      "compromise_indicators": {
+        "firmware_integrity": false,
+        "firmware_signed": false,
+        "can_c_access_enabled": true,
+        "can_ihs_access_enabled": true
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "firmware_integrity_verification": true,
+          "signed_update_required": true,
+          "arbitrary_can_tx_allowed": false,
+          "arbitrary_can_c_tx_allowed": false,
+          "arbitrary_can_ihs_tx_allowed": false
+        },
+        "whitepaper_vulnerable_state": {
+          "firmware_integrity_verification": false,
+          "signed_update_required": false,
+          "arbitrary_can_tx_allowed": true,
+          "arbitrary_can_c_tx_allowed": true,
+          "arbitrary_can_ihs_tx_allowed": true
+        }
+      },
+      "state_schema_note": "security_state_profiles keys are authoritative for firmware verification and CAN transmit authorization."
+    },
+    {
+      "id": "ABS_ECU",
+      "name": "ABS Module (Anti-Lock Brakes)",
+      "type": "ECU",
+      "description": "Anti-lock braking system ECU. Safety-critical. Receives CAN-C messages for brake control. No CAN message authentication enforced.",
+      "interfaces": [
+        {
+          "id": "ABS_CAN_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-C interface for brake control commands",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "brake_status": "enabled",
+        "can_msg_auth_required": true,
+        "domain_isolation": true
+      },
+      "compromise_indicators": {
+        "brake_status": "disabled"
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "can_msg_auth_required": true,
+          "domain_isolation": true
+        },
+        "whitepaper_vulnerable_state": {
+          "can_msg_auth_required": false,
+          "domain_isolation": false
+        }
+      }
+    },
+    {
+      "id": "EPS_ECU",
+      "name": "EPS Module (Electric Power Steering)",
+      "type": "ECU",
+      "description": "Electric power steering ECU. Safety-critical. Accepts CAN-C steering commands. No CAN message authentication enforced.",
+      "interfaces": [
+        {
+          "id": "EPS_CAN_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-C interface for steering control commands",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "steering_status": "normal",
+        "can_msg_auth_required": true,
+        "domain_isolation": true
+      },
+      "compromise_indicators": {
+        "steering_status": "attacker_controlled"
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "can_msg_auth_required": true,
+          "domain_isolation": true
+        },
+        "whitepaper_vulnerable_state": {
+          "can_msg_auth_required": false,
+          "domain_isolation": false
+        }
+      }
+    },
+    {
+      "id": "TCM_ECU",
+      "name": "TCM Module (Transmission Control)",
+      "type": "ECU",
+      "description": "Transmission control module. Safety-critical. Accepts CAN-C transmission commands. No CAN message authentication enforced.",
+      "interfaces": [
+        {
+          "id": "TCM_CAN_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-C interface for transmission control commands",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "transmission_status": "engaged",
+        "can_msg_auth_required": true,
+        "domain_isolation": true
+      },
+      "compromise_indicators": {
+        "transmission_status": "disengaged"
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "can_msg_auth_required": true,
+          "domain_isolation": true
+        },
+        "whitepaper_vulnerable_state": {
+          "can_msg_auth_required": false,
+          "domain_isolation": false
+        }
+      }
+    },
+    {
+      "id": "PCM_ECU",
+      "name": "PCM Module (Powertrain Control)",
+      "type": "ECU",
+      "description": "Powertrain control module. Safety-critical. Engine kill command accessible via CAN-C. No CAN message authentication enforced.",
+      "interfaces": [
+        {
+          "id": "PCM_CAN_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-C interface for engine/powertrain control commands",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "engine_status": "running",
+        "can_msg_auth_required": true,
+        "domain_isolation": true
+      },
+      "compromise_indicators": {
+        "engine_status": "killed"
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "can_msg_auth_required": true,
+          "domain_isolation": true
+        },
+        "whitepaper_vulnerable_state": {
+          "can_msg_auth_required": false,
+          "domain_isolation": false
+        }
+      }
+    },
+    {
+      "id": "HVAC_ECU",
+      "name": "HVAC Module (Climate Control)",
+      "type": "ECU",
+      "description": "Heating, ventilation, and air conditioning ECU. Connected to CAN-IHS. Controllable via D-Bus and CAN-IHS messages.",
+      "interfaces": [
+        {
+          "id": "HVAC_CAN_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-IHS interface for HVAC control",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "hvac_status": "normal",
+        "temp_celsius": 22,
+        "can_msg_auth_required": false
+      },
+      "compromise_indicators": {
+        "hvac_status": "attacker_controlled",
+        "temp_celsius": 99
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "dbus_method_access_authenticated": true,
+          "unauthorized_state_change_rejected": true,
+          "can_msg_auth_required": true
+        },
+        "whitepaper_vulnerable_state": {
+          "dbus_method_access_authenticated": false,
+          "unauthorized_state_change_rejected": false,
+          "can_msg_auth_required": false
+        }
+      }
+    },
+    {
+      "id": "AMP_ECU",
+      "name": "Radio Amplifier Module",
+      "type": "ECU",
+      "description": "Audio amplifier ECU. Connected to CAN-IHS. Volume and station controllable via D-Bus.",
+      "interfaces": [
+        {
+          "id": "AMP_CAN_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-IHS interface for audio amplifier control",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "audio_status": "normal",
+        "volume_level": 15,
+        "can_msg_auth_required": false
+      },
+      "compromise_indicators": {
+        "audio_status": "attacker_controlled",
+        "volume_level": 100
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "dbus_method_access_authenticated": true,
+          "unauthorized_state_change_rejected": true,
+          "can_msg_auth_required": true
+        },
+        "whitepaper_vulnerable_state": {
+          "dbus_method_access_authenticated": false,
+          "unauthorized_state_change_rejected": false,
+          "can_msg_auth_required": false
+        }
+      }
+    },
+    {
+      "id": "DDM_ECU",
+      "name": "Door Driver Module",
+      "type": "ECU",
+      "description": "Driver door control module. Connected to CAN-IHS. Door lock/unlock controllable via CAN-IHS messages.",
+      "interfaces": [
+        {
+          "id": "DDM_CAN_IF",
+          "type": "CAN",
+          "protocol": "CAN 2.0B",
+          "description": "CAN-IHS interface for door lock control",
+          "connected_to": [
+            "V850_MCU"
+          ]
+        }
+      ],
+      "initial_state": {
+        "door_lock_status": "locked",
+        "can_msg_auth_required": false
+      },
+      "security_state_profiles": {
+        "hardened_target_state": {
+          "can_msg_auth_required": true,
+          "unauthorized_state_change_rejected": true
+        },
+        "whitepaper_vulnerable_state": {
+          "can_msg_auth_required": false,
+          "unauthorized_state_change_rejected": false
+        }
+      }
+    },
+    {
+      "id": "Cellular_Network",
+      "name": "Sprint Cellular Network",
+      "type": "External_Network",
+      "description": "Sprint (now T-Mobile) cellular carrier network. All Uconnect-equipped Chrysler vehicles share the same IP range on this network. Any Sprint subscriber can scan and reach other vehicles on the network.",
+      "interfaces": [
+        {
+          "id": "Sprint_IF",
+          "type": "Network",
+          "protocol": "TCP/IP",
+          "description": "Carrier network shared by attacker and target vehicle",
+          "connected_to": [
+            "OMAP_Processor"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OTA_Server",
+      "name": "Uconnect OTA Update Server",
+      "type": "External_Server",
+      "description": "OTA firmware distribution server. Firmware packages delivered without cryptographic signature verification in the original Uconnect implementation.",
+      "interfaces": [
+        {
+          "id": "OTA_Server_IF",
+          "type": "Network",
+          "protocol": "TCP/IP / HTTPS",
+          "description": "OTA firmware delivery channel",
+          "connected_to": [
+            "OMAP_Processor"
+          ]
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "CONN_A0",
+      "from": "Attacker_Endpoint",
+      "to": "Cellular_Network",
+      "interface": "Carrier_Client_IF",
+      "protocol": "TCP/IP",
+      "asset": "UCONNECT_Cellular_Channel",
+      "description": "Logical attacker-origin connection used to model remote carrier-reachable probing before contact with the vehicle."
+    },
+    {
+      "id": "CONN_01",
+      "from": "Cellular_Network",
+      "to": "OMAP_Processor",
+      "interface": "Cellular_IF",
+      "protocol": "TCP/IP",
+      "asset": "UCONNECT_Cellular_Channel",
+      "description": "Cellular channel from attacker to Uconnect head unit. TCP port 6667 open. Entry point for TS_01.",
+      "capability_tags": [
+        "remote_service_discovery",
+        "dbus_session_attempt"
+      ]
+    },
+    {
+      "id": "CONN_02",
+      "from": "OMAP_Processor",
+      "to": "OMAP_Processor",
+      "interface": "DBus_IF",
+      "protocol": "D-Bus over TCP",
+      "asset": "UCONNECT_DBus_Service",
+      "description": "D-Bus IPC service on OMAP. No authentication, running as root. Target for TS_02.",
+      "capability_tags": [
+        "dbus_method_enumeration",
+        "dbus_method_invocation"
+      ],
+      "modeling_note": "Logical self-loop used to model a service hosted on OMAP_Processor but remotely reachable over the same D-Bus endpoint; execution pipelines may treat this as a service exposure edge rather than a physical hop.",
+      "self_loop_semantics": "logical_service_exposure"
+    },
+    {
+      "id": "CONN_03",
+      "from": "OTA_Server",
+      "to": "OMAP_Processor",
+      "interface": "OTA_IF",
+      "protocol": "TCP/IP / HTTPS",
+      "asset": "V850_Firmware_Channel",
+      "description": "OTA firmware update channel. No signature verification. Attack path for TS_03."
+    },
+    {
+      "id": "CONN_04",
+      "from": "OMAP_Processor",
+      "to": "V850_MCU",
+      "interface": "SPI_IF",
+      "protocol": "SPI",
+      "asset": "V850_Firmware_Channel",
+      "description": "SPI channel for V850 firmware flashing. No code signing. Used in TS_03 to flash malicious firmware.",
+      "capability_tags": [
+        "internal_bridge_pivot",
+        "v850_update_path_emulation"
+      ]
+    },
+    {
+      "id": "CONN_05",
+      "from": "V850_MCU",
+      "to": "ABS_ECU",
+      "interface": "CAN_C_IF",
+      "protocol": "CAN 2.0B",
+      "asset": "CAN_C_Bus",
+      "description": "CAN-C channel to ABS module. No message authentication. Brake disable via CAN injection (TS_04).",
+      "can_arb_id": "0x07B",
+      "capability_tags": [
+        "can_sniffing",
+        "can_frame_injection"
+      ]
+    },
+    {
+      "id": "CONN_06",
+      "from": "V850_MCU",
+      "to": "EPS_ECU",
+      "interface": "CAN_C_IF",
+      "protocol": "CAN 2.0B",
+      "asset": "CAN_C_Bus",
+      "description": "CAN-C channel to EPS module. No message authentication. Steering control via CAN injection (TS_04).",
+      "can_arb_id": "0x292",
+      "capability_tags": [
+        "can_sniffing",
+        "can_frame_injection"
+      ]
+    },
+    {
+      "id": "CONN_07",
+      "from": "V850_MCU",
+      "to": "TCM_ECU",
+      "interface": "CAN_C_IF",
+      "protocol": "CAN 2.0B",
+      "asset": "CAN_C_Bus",
+      "description": "CAN-C channel to TCM module. No message authentication. Transmission disable via CAN injection (TS_04).",
+      "can_arb_id": "0x0F0",
+      "capability_tags": [
+        "can_sniffing",
+        "can_frame_injection"
+      ]
+    },
+    {
+      "id": "CONN_08",
+      "from": "V850_MCU",
+      "to": "PCM_ECU",
+      "interface": "CAN_C_IF",
+      "protocol": "CAN 2.0B",
+      "asset": "CAN_C_Bus",
+      "description": "CAN-C channel to PCM module. No message authentication. Engine kill via CAN injection (TS_04).",
+      "can_arb_id": "0x208",
+      "capability_tags": [
+        "can_sniffing",
+        "can_frame_injection"
+      ]
+    },
+    {
+      "id": "CONN_09",
+      "from": "V850_MCU",
+      "to": "HVAC_ECU",
+      "interface": "CAN_IHS_IF",
+      "protocol": "CAN 2.0B",
+      "asset": "CAN_IHS_Bus",
+      "description": "CAN-IHS channel to HVAC module. Controllable via D-Bus and CAN-IHS injection (TS_02).",
+      "can_arb_id": "0x3B3"
+    },
+    {
+      "id": "CONN_10",
+      "from": "V850_MCU",
+      "to": "AMP_ECU",
+      "interface": "CAN_IHS_IF",
+      "protocol": "CAN 2.0B",
+      "asset": "CAN_IHS_Bus",
+      "description": "CAN-IHS channel to audio amplifier. Volume/station controllable via D-Bus (TS_02).",
+      "can_arb_id": "0x3D2"
+    },
+    {
+      "id": "CONN_11",
+      "from": "Attacker_Endpoint",
+      "to": "OMAP_Processor",
+      "interface": "DoIP_IF",
+      "protocol": "DoIP / ISO 13400-2 over TCP",
+      "asset": "DoIP_Diagnostic_Channel",
+      "description": "DoIP diagnostic gateway endpoint exposed by IVI surrogate. UDS over DoIP (0x10/0x27/0x11/0x22). Entry point for TS_07 (routing-activation bypass, SecurityAccess seed/key, ECUReset).",
+      "capability_tags": [
+        "doip_routing_activation",
+        "uds_session_control",
+        "uds_security_access",
+        "uds_ecu_reset",
+        "uds_read_did"
+      ]
+    },
+    {
+      "id": "CONN_12",
+      "from": "Attacker_Endpoint",
+      "to": "OMAP_Processor",
+      "interface": "SOMEIP_IF",
+      "protocol": "SOME/IP / AUTOSAR over TCP",
+      "asset": "SOMEIP_Service_Channel",
+      "description": "SOME/IP service-oriented endpoint exposed by IVI surrogate. VehicleStatusService (service_id 0x1234) methods GetSpeed/GetLocation/SetHVAC. Entry point for TS_08 (unauthenticated method invocation).",
+      "capability_tags": [
+        "someip_method_invoke",
+        "someip_get_speed",
+        "someip_get_location",
+        "someip_set_hvac"
+      ]
+    },
+    {
+      "id": "CONN_13",
+      "from": "OTA_Server",
+      "to": "OMAP_Processor",
+      "interface": "OTA_IF",
+      "protocol": "TCP/IP / HTTP (no TLS)",
+      "asset": "V850_Firmware_Channel",
+      "description": "OTA firmware update channel without TLS. Plain HTTP variant of CONN_03 used for transport-layer-bypass paths in TS_06.T2/T3. Active only when emulator ENABLE_TLS=false.",
+      "capability_tags": [
+        "ota_plaintext_endpoint",
+        "transport_layer_bypass_target"
+      ]
+    }
+  ],
+  "modeling_note": {
+    "attack_tree_alignment": "Components and connections are aligned to the generalized attack-tree schema in threats_jeep_tara_revised_v2.json. Intermediate attack goals are not duplicated here; only concrete assets, interfaces, and stateful conditions are represented.",
+    "state_interpretation": "initial_state represents the hardened validation target; security_state_profiles.whitepaper_vulnerable_state captures the disclosed vulnerable posture used to reconstruct TARA-style scenarios."
+  }
+}

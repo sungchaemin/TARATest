@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# API Keys & Secrets
+.env
+*.key
+api_keys.txt
+config/secrets.json
+
+# Output directories
+output/
+cache/
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation builds
+docs/_build/
+
+# System files
+*.pid
+*.lock

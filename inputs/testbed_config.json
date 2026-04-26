@@ -1,0 +1,249 @@
+{
+  "_description": "Jeep Cherokee focused testbed bindings aligned to the reconstructed TARA-style threat model.",
+  "_protocol_note": "D-Bus over TCP 6667 models the exposed IVI service path. CONN_04 emulates the internal OMAP-to-V850 pivot. CONN_05~08 model CAN-C effects. CONN_09~10 model infotainment-side CAN-IHS effects.",
+  "_mode_note": {
+    "hardened_target_state": "Used to validate whether selected controls block the attack paths.",
+    "whitepaper_vulnerable_state": "Used to reproduce the disclosed exploit behavior where the emulator supports it."
+  },
+  "CONN_01": {
+    "_desc": "Cellular channel to Uconnect head unit \u2014 D-Bus wire protocol (TCP 6667)",
+    "target_host": "172.23.96.1",
+    "target_port": 6667,
+    "protocol": "dbus_tcp",
+    "bus_address": "tcp:host=172.23.96.1,port=6667",
+    "sasl_mechanism": "ANONYMOUS",
+    "sasl_mechanism_only": "ANONYMOUS",
+    "byte_order": "little",
+    "dbus_protocol_version": 1,
+    "timeout_sec": 5,
+    "model_connection": "CONN_01",
+    "capability_tags": [
+      "remote_discovery",
+      "dbus_connect",
+      "sasl_handshake"
+    ]
+  },
+  "CONN_02": {
+    "_desc": "D-Bus IPC service on Uconnect head unit \u2014 D-Bus wire protocol (TCP 6667)",
+    "target_host": "172.23.96.1",
+    "target_port": 6667,
+    "protocol": "dbus_tcp",
+    "bus_address": "tcp:host=172.23.96.1,port=6667",
+    "sasl_mechanism": "ANONYMOUS",
+    "sasl_mechanism_only": "ANONYMOUS",
+    "byte_order": "little",
+    "dbus_protocol_version": 1,
+    "object_path_root": "/",
+    "dbus_interfaces": [
+      "com.harman.uconnect.GPS",
+      "com.harman.uconnect.HVAC",
+      "com.harman.uconnect.Radio",
+      "com.harman.uconnect.Display"
+    ],
+    "timeout_sec": 5,
+    "model_connection": "CONN_02",
+    "capability_tags": [
+      "dbus_enumeration",
+      "dbus_method_abuse"
+    ],
+    "_modeling_note": "Logical same-host D-Bus service exposure. Although the service runs on OMAP_Processor, it is treated as a remotely reachable endpoint for attack-step binding and should not be interpreted as a physical hop."
+  },
+  "CONN_03": {
+    "_desc": "OTA firmware update channel (HTTPS)",
+    "target_host": "172.23.96.1",
+    "target_port": 8444,
+    "protocol": "HTTPS",
+    "ota_check_endpoint": "/api/v1/firmware/check",
+    "ota_update_endpoint": "/api/v1/firmware/update",
+    "ota_check_method": "GET",
+    "ota_update_method": "POST",
+    "content_type": "application/json",
+    "tls": true,
+    "auth_required": false,
+    "timeout_sec": 10,
+    "model_connection": "CONN_03"
+  },
+  "CONN_04": {
+    "_desc": "SPI channel: OMAP to V850 \u2014 simulated via vcan0",
+    "target_host": "172.23.96.1",
+    "target_port": 6668,
+    "protocol": "socketcand",
+    "can_iface": "vcan0",
+    "arb_id": "0x7DF",
+    "timeout_sec": 5,
+    "model_connection": "CONN_04",
+    "emulation_note": "This connection emulates the internal OMAP-to-V850 pivot rather than reproducing the original physical firmware-flash process exactly.",
+    "capability_tags": [
+      "bridge_pivot",
+      "internal_update_path_emulation"
+    ]
+  },
+  "CONN_05": {
+    "_desc": "CAN-C: V850 to ABS ECU (arb_id 0x07B) via socketcand",
+    "target_host": "172.23.96.1",
+    "target_port": 6668,
+    "protocol": "socketcand",
+    "can_iface": "vcan0",
+    "arb_id": "0x07B",
+    "ecu": "ABS",
+    "timeout_sec": 3,
+    "model_connection": "CONN_05",
+    "capability_tags": [
+      "can_sniff",
+      "can_inject"
+    ]
+  },
+  "CONN_06": {
+    "_desc": "CAN-C: V850 to EPS ECU (arb_id 0x292) via socketcand",
+    "target_host": "172.23.96.1",
+    "target_port": 6668,
+    "protocol": "socketcand",
+    "can_iface": "vcan0",
+    "arb_id": "0x292",
+    "ecu": "EPS",
+    "timeout_sec": 3,
+    "model_connection": "CONN_06",
+    "capability_tags": [
+      "can_sniff",
+      "can_inject"
+    ]
+  },
+  "CONN_07": {
+    "_desc": "CAN-C: V850 to TCM ECU (arb_id 0x0F0) via socketcand",
+    "target_host": "172.23.96.1",
+    "target_port": 6668,
+    "protocol": "socketcand",
+    "can_iface": "vcan0",
+    "arb_id": "0x0F0",
+    "ecu": "TCM",
+    "timeout_sec": 3,
+    "model_connection": "CONN_07",
+    "capability_tags": [
+      "can_sniff",
+      "can_inject"
+    ]
+  },
+  "CONN_08": {
+    "_desc": "CAN-C: V850 to PCM ECU (arb_id 0x208) via socketcand",
+    "target_host": "172.23.96.1",
+    "target_port": 6668,
+    "protocol": "socketcand",
+    "can_iface": "vcan0",
+    "arb_id": "0x208",
+    "ecu": "PCM",
+    "timeout_sec": 3,
+    "model_connection": "CONN_08",
+    "capability_tags": [
+      "can_sniff",
+      "can_inject"
+    ]
+  },
+  "CONN_09": {
+    "_desc": "CAN-IHS: V850 to HVAC ECU (arb_id 0x3B3) via socketcand",
+    "target_host": "172.23.96.1",
+    "target_port": 6668,
+    "protocol": "socketcand",
+    "can_iface": "vcan1",
+    "arb_id": "0x3B3",
+    "ecu": "HVAC",
+    "timeout_sec": 3,
+    "model_connection": "CONN_09",
+    "capability_tags": [
+      "ihs_bus_effect"
+    ]
+  },
+  "CONN_10": {
+    "_desc": "CAN-IHS: V850 to Audio Amplifier ECU (arb_id 0x3D2) via socketcand",
+    "target_host": "172.23.96.1",
+    "target_port": 6668,
+    "protocol": "socketcand",
+    "can_iface": "vcan1",
+    "arb_id": "0x3D2",
+    "ecu": "AMP",
+    "timeout_sec": 3,
+    "model_connection": "CONN_10",
+    "capability_tags": [
+      "ihs_bus_effect"
+    ]
+  },
+  "CONN_11": {
+    "_desc": "DoIP diagnostic gateway (ISO 13400-2) over TCP \u2014 UDS SecurityAccess / ECUReset path",
+    "target_host": "172.23.96.1",
+    "target_port": 8445,
+    "protocol": "doip_tcp",
+    "doip_version": "0x02",
+    "doip_entity_address": "0x00E0",
+    "client_logical_address_default": "0x0E00",
+    "default_routing_activation_type": "0x00",
+    "uds_services": [
+      "0x10 DiagnosticSessionControl",
+      "0x27 SecurityAccess",
+      "0x11 ECUReset",
+      "0x22 ReadDataByIdentifier"
+    ],
+    "uds_dids": {
+      "0xF190": "VIN"
+    },
+    "routing_activation_types": {
+      "0x00": "default (unauthenticated)",
+      "0x01": "WWH-OBD",
+      "0xE0": "central security (authenticated)"
+    },
+    "timeout_sec": 5,
+    "model_connection": "CONN_11",
+    "capability_tags": [
+      "doip_routing_activation",
+      "uds_session_control",
+      "uds_security_access",
+      "uds_ecu_reset",
+      "uds_read_did"
+    ],
+    "_modeling_note": "Server emits secure-mode rejection (response code 0x04 / NRC 0x33) when ENABLE_DOIP_AUTH=true and the request lacks SecurityAccess. Vulnerable mode accepts zero seed and any key."
+  },
+  "CONN_13": {
+    "_desc": "OTA firmware update channel \u2014 plain HTTP (no TLS) for transport-bypass scenarios; emulator listens on 6669 only when ENABLE_TLS=false",
+    "target_host": "172.23.96.1",
+    "target_port": 6669,
+    "protocol": "http",
+    "ota_check_endpoint": "/api/v1/firmware/check",
+    "ota_update_endpoint": "/api/v1/firmware/update",
+    "ota_check_method": "GET",
+    "ota_update_method": "POST",
+    "content_type": "application/json",
+    "tls": false,
+    "auth_required": false,
+    "timeout_sec": 10,
+    "model_connection": "CONN_13",
+    "capability_tags": [
+      "ota_plaintext_endpoint",
+      "transport_layer_bypass_target"
+    ],
+    "_modeling_note": "Active only when AvnEcuService.ENABLE_TLS=false; otherwise CONN_03 (HTTPS 8444) is the active OTA endpoint. Use this for TS_06.T2/T3 transport-bypass paths."
+  },
+  "CONN_12": {
+    "_desc": "SOME/IP service-oriented endpoint (AUTOSAR) over TCP \u2014 VehicleStatusService method invocation",
+    "target_host": "172.23.96.1",
+    "target_port": 8443,
+    "protocol": "someip_tcp",
+    "someip_protocol_version": "0x01",
+    "someip_interface_version": "0x01",
+    "client_id": "0x0001",
+    "service_id": "0x1234",
+    "service_name": "VehicleStatusService",
+    "methods": {
+      "0x0001": "GetSpeed (response: uint16 km/h)",
+      "0x0002": "GetLocation (response: 'lat,lon' UTF-8)",
+      "0x0003": "SetHVAC (request: uint8 temp)"
+    },
+    "timeout_sec": 5,
+    "model_connection": "CONN_12",
+    "capability_tags": [
+      "someip_method_invoke",
+      "someip_get_speed",
+      "someip_get_location",
+      "someip_set_hvac"
+    ],
+    "_modeling_note": "Server returns return-code 0x15 ACCESS_DENIED on every method when ENABLE_SOMEIP_AUTH=true. Vulnerable mode executes the method and returns 0x00 OK. No SD (Service Discovery) over UDP \u2014 client connects directly to the TCP port."
+  },
+  "_generalized_tree_note": "Bindings below support generalized attack trees with reusable leaf steps. A single connection may be reused by multiple step nodes and multiple attack paths."
+}

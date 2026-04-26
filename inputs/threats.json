@@ -1,0 +1,1793 @@
+{
+  "item": {
+    "id": "ITEM_JEEP_LIKE_VEHICLE_TARA_V6_3",
+    "name": "Jeep-like Vehicle Cyber-Physical TARA (v6.3)",
+    "description": "ISO/SAE 21434-aligned TARA reconstruction for a Jeep-Cherokee-class vehicle. v6.3 fixes from v6.2: restored adversarial qualifiers on 8 leaf descriptions that v6.2 had stripped during the 'by-clause' removal pass. v6.2 had over-corrected on atomicity and produced steps phrased as plain procedural actions a normal client would also perform (e.g. 'Open a plaintext connection', 'Issue a UDS ECUReset request'). v6.3 reintroduces the adversarial signal at the leaf (unauthorised / exploiting / without authorisation / bypassed) while keeping each leaf as a single atomic operation. Tree topology, step count, and cross-refs are unchanged from v6.2. Reference exploit chain: Miller and Valasek 2015. Surrogate emulator transports are used in the testbed instead of the original physical wiring."
+  },
+  "method_note": {
+    "framework": "ISO/SAE 21434 (informative TARA structure)",
+    "source_basis": "Charlie Miller and Chris Valasek, 'Remote Exploitation of an Unaltered Passenger Vehicle' (Black Hat USA / IOActive, 2015). Extended with modern SOA / DoIP / OTA endpoints exposed by the testbed emulator.",
+    "modeling_assumption": "Damage scenarios describe road-user-level harm (per Clause 15). Threat scenarios describe how an attacker realises the damage. Multiple alternative attack outcomes that share preconditions are modelled as OR-branches inside one threat scenario, not as separate threat scenarios.",
+    "atomic_step_principle": "Each leaf step corresponds to one runtime-atomic operation. CAN frame payload construction and transmission are a single atomic call (bus.send) and therefore form a single step. Reverse-engineering of captured traffic is a separate observation/analysis action and is modelled as its own step, marked reusable=true when shared by multiple per-target transmit paths. Step descriptions describe ONLY that atomic operation; the higher-level outcome it achieves is carried by the parent goal node's label, not embedded inside the leaf description. Adversarial test (Schneier): each leaf must be distinguishable from the same operation performed by a normal user. A bare 'Open a plaintext connection' is not adversarial because any normal client does it; 'Open a plaintext connection, exploiting absent transport-layer enforcement' is. Adversarial qualifiers (unauthorised / exploiting / without authentication / bypassed) at the leaf preserve the attack-tree intent even when the parent G-label is procedural.",
+    "mapping_basis": "CC SFR and NIST SP 800-53 mappings are engineering candidates for the protections needed to block each path; not normative certification claims.",
+    "attack_tree_representation": "General-form tree with goal, logic, condition, and step nodes. Supports arbitrary AND/OR nesting, reusable leaves, and intermediate attack goals.",
+    "success_criterion_note": "success_criterion is NOT a TARA artefact field per 21434. It is preserved per-path here as a pipeline-only hand-off to the test-execution stage (step3b/step4)."
+  },
+  "damage_scenarios": [
+    {
+      "id": "DS_01_REMOTE_IVI_PRIVACY_AND_FUNCTION_COMPROMISE",
+      "description": "Unauthorised disclosure of vehicle location and identifiers, and unauthorised manipulation of cabin functions (climate, audio, display), caused by an external attacker compromising the In-Vehicle Infotainment domain over the carrier-reachable network.",
+      "affected_road_user_harm": "Loss of privacy of vehicle occupants (real-time location and identifiers leaked to a remote attacker) and loss of operational integrity of cabin functions while the vehicle is in use.",
+      "impact": {
+        "safety": "Major",
+        "financial": "Moderate",
+        "operational": "Major",
+        "privacy": "Severe",
+        "overall": "Major"
+      },
+      "threat_scenarios": [
+        {
+          "id": "TS_01_REMOTE_IVI_FOOTHOLD",
+          "title": "Remote attacker establishes an unauthenticated IVI control session over the carrier-reachable network",
+          "asset_id": "IVI_REMOTE_CONTROL_SERVICE",
+          "asset_name": "IVI remote-control service exposed via cellular / external network",
+          "attack_vector": "Remote (carrier or equivalent external network)",
+          "real_world_reference": "Miller and Valasek 2015: cellular-reachable D-Bus on TCP 6667, anonymous SASL session, RCE on the head unit.",
+          "CAL": 4,
+          "TAF": 2,
+          "current_attack_feasibility": "High",
+          "cybersecurity_goal": "The IVI remote-control service must not be reachable from the public carrier network without authentication; unauthenticated session establishment must be rejected.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FIA_UAU.2",
+              "FDP_ACC.1",
+              "FDP_ACF.1"
+            ],
+            "nist_sp_800_53": [
+              "IA-2",
+              "AC-3",
+              "SC-7",
+              "AC-17"
+            ]
+          },
+          "preconditions": [
+            "Attacker has a network path from the public carrier (or equivalent external network) to the vehicle's IVI control service.",
+            "No filtering or authentication separates the external network from the IVI control endpoint."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Enumerate the externally reachable network address space to locate candidate IVI control endpoints.",
+              "binding": "CONN_01",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7",
+                  "AC-17"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Send a reconnaissance probe to a candidate endpoint and observe whether the IVI control service responds, with no authorisation supplied.",
+              "binding": "CONN_01",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7",
+                  "AC-17"
+                ]
+              }
+            },
+            "T3": {
+              "description": "Open a transport-layer session to the IVI control service and negotiate the protocol preamble (transport handshake) with the service.",
+              "binding": "CONN_01",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-17"
+                ]
+              }
+            },
+            "T4": {
+              "description": "Complete unauthenticated session establishment, transitioning the session into a state from which control messages can be exchanged without supplying credentials.",
+              "binding": "CONN_01",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "REMOTE_UNAUTHENTICATED_IVI_FOOTHOLD_OBTAINED",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "G1",
+                  "G2"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_EXTERNAL_NETWORK_PATH_TO_VEHICLE"
+              },
+              {
+                "id": "G1",
+                "node_type": "goal",
+                "label": "DISCOVER_EXPOSED_IVI_CONTROL_SERVICE",
+                "logic": "AND",
+                "children": [
+                  "S1",
+                  "S2"
+                ]
+              },
+              {
+                "id": "G2",
+                "node_type": "goal",
+                "label": "ESTABLISH_SESSION_WITHOUT_AUTHENTICATION",
+                "logic": "AND",
+                "children": [
+                  "S3",
+                  "S4"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1"
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              },
+              {
+                "id": "S3",
+                "node_type": "step",
+                "step_ref": "T3"
+              },
+              {
+                "id": "S4",
+                "node_type": "step",
+                "step_ref": "T4"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_01_REMOTE_FOOTHOLD",
+              "path_description": "Enumerate reachable address space -> probe candidate endpoint -> open transport session -> complete unauthenticated session establishment",
+              "path_steps": [
+                "T1",
+                "T2",
+                "T3",
+                "T4"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "SC-7",
+                "AC-17"
+              ],
+              "TAF": 2,
+              "CAL": 4,
+              "impact": "Major",
+              "success_criterion": "An unauthenticated control session is established on the IVI service from an external network; the attacker can exchange control messages without having supplied credentials."
+            }
+          ]
+        },
+        {
+          "id": "TS_02_UNAUTHORISED_IVI_FUNCTION_ABUSE",
+          "title": "Attacker with unauthenticated IVI session enumerates and abuses exposed functions to disclose location and manipulate cabin state",
+          "asset_id": "IVI_EXPOSED_FUNCTIONS",
+          "asset_name": "IVI service surface (location, HVAC, audio, radio tuner, display)",
+          "attack_vector": "Active unauthenticated IVI session (precondition supplied by TS_01)",
+          "real_world_reference": "Miller and Valasek 2015: GPS location read and HVAC / radio / display control via exposed D-Bus methods on the compromised head unit.",
+          "CAL": 3,
+          "TAF": 2,
+          "current_attack_feasibility": "High",
+          "cybersecurity_goal": "Functions exposed by the IVI service must enforce per-method authorisation; sensitive reads and state-changing methods must be blocked for unauthenticated sessions.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FIA_UAU.2",
+              "FDP_ACC.1",
+              "FDP_ETC.2"
+            ],
+            "nist_sp_800_53": [
+              "IA-2",
+              "AC-3",
+              "AC-4"
+            ]
+          },
+          "preconditions": [
+            "Attacker has an active unauthenticated IVI control session (achieved via TS_01)."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Enumerate exposed services, callable methods, and state-changing interfaces over the unauthenticated IVI session.",
+              "binding": "CONN_02",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "AC-3"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Invoke the location query method on the unauthenticated IVI session and read the returned geolocation, speed, and identification fields.",
+              "binding": "CONN_02",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1",
+                  "FDP_ETC.2"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3",
+                  "AC-4"
+                ]
+              }
+            },
+            "T3": {
+              "description": "Invoke the HVAC control method on the unauthenticated IVI session with attacker-supplied parameters.",
+              "binding": "CONN_02",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3"
+                ]
+              }
+            },
+            "T4": {
+              "description": "Invoke the audio volume control method on the unauthenticated IVI session with attacker-supplied parameters.",
+              "binding": "CONN_02",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3"
+                ]
+              }
+            },
+            "T5": {
+              "description": "Invoke the radio tuner channel control method on the unauthenticated IVI session with attacker-supplied parameters.",
+              "binding": "CONN_02",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3"
+                ]
+              }
+            },
+            "T6": {
+              "description": "Invoke the display control method on the unauthenticated IVI session with attacker-supplied parameters.",
+              "binding": "CONN_02",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "UNAUTHORISED_IVI_FUNCTION_ABUSE",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "G_ENUM",
+                  "L_FUNC"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_UNAUTHENTICATED_IVI_SESSION"
+              },
+              {
+                "id": "G_ENUM",
+                "node_type": "goal",
+                "label": "ENUMERATE_EXPOSED_IVI_METHODS",
+                "logic": "AND",
+                "children": [
+                  "S1"
+                ]
+              },
+              {
+                "id": "L_FUNC",
+                "node_type": "logic",
+                "logic": "OR",
+                "children": [
+                  "G_LOC",
+                  "G_HVAC",
+                  "G_VOL",
+                  "G_CHN",
+                  "G_DISP"
+                ]
+              },
+              {
+                "id": "G_LOC",
+                "node_type": "goal",
+                "label": "DISCLOSE_VEHICLE_LOCATION_AND_IDENTIFIERS",
+                "logic": "AND",
+                "children": [
+                  "S2"
+                ]
+              },
+              {
+                "id": "G_HVAC",
+                "node_type": "goal",
+                "label": "MANIPULATE_HVAC_STATE",
+                "logic": "AND",
+                "children": [
+                  "S3"
+                ]
+              },
+              {
+                "id": "G_VOL",
+                "node_type": "goal",
+                "label": "MANIPULATE_AUDIO_VOLUME",
+                "logic": "AND",
+                "children": [
+                  "S4"
+                ]
+              },
+              {
+                "id": "G_CHN",
+                "node_type": "goal",
+                "label": "MANIPULATE_RADIO_CHANNEL",
+                "logic": "AND",
+                "children": [
+                  "S5"
+                ]
+              },
+              {
+                "id": "G_DISP",
+                "node_type": "goal",
+                "label": "MANIPULATE_DISPLAY_OUTPUT",
+                "logic": "AND",
+                "children": [
+                  "S6"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1",
+                "reusable": true
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              },
+              {
+                "id": "S3",
+                "node_type": "step",
+                "step_ref": "T3"
+              },
+              {
+                "id": "S4",
+                "node_type": "step",
+                "step_ref": "T4"
+              },
+              {
+                "id": "S5",
+                "node_type": "step",
+                "step_ref": "T5"
+              },
+              {
+                "id": "S6",
+                "node_type": "step",
+                "step_ref": "T6"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_02A_LOCATION_DISCLOSURE",
+              "path_description": "Enumerate IVI methods, then exfiltrate vehicle location and identifiers without authorisation",
+              "path_steps": [
+                "T1",
+                "T2"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1",
+                "FDP_ETC.2"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3",
+                "AC-4"
+              ],
+              "TAF": 2,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "Vehicle GPS coordinates, speed, and identifier are returned to the attacker without prior authentication or per-method authorisation."
+            },
+            {
+              "path_id": "P_TS_02B_HVAC_MANIPULATION",
+              "path_description": "Enumerate IVI methods, then manipulate HVAC state without authorisation",
+              "path_steps": [
+                "T1",
+                "T3"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3"
+              ],
+              "TAF": 2,
+              "CAL": 3,
+              "impact": "Major",
+              "success_criterion": "HVAC temperature or mode is changed to attacker-specified values without prior authentication or per-method authorisation."
+            },
+            {
+              "path_id": "P_TS_02C_VOLUME_MANIPULATION",
+              "path_description": "Enumerate IVI methods, then manipulate audio volume without authorisation",
+              "path_steps": [
+                "T1",
+                "T4"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3"
+              ],
+              "TAF": 2,
+              "CAL": 3,
+              "impact": "Major",
+              "success_criterion": "Audio volume is changed to an attacker-specified level without prior authentication or per-method authorisation."
+            },
+            {
+              "path_id": "P_TS_02D_CHANNEL_MANIPULATION",
+              "path_description": "Enumerate IVI methods, then manipulate radio tuner state without authorisation",
+              "path_steps": [
+                "T1",
+                "T5"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3"
+              ],
+              "TAF": 2,
+              "CAL": 3,
+              "impact": "Major",
+              "success_criterion": "Broadcast channel or frequency is changed to an attacker-specified value without prior authentication or per-method authorisation."
+            },
+            {
+              "path_id": "P_TS_02E_DISPLAY_MANIPULATION",
+              "path_description": "Enumerate IVI methods, then manipulate display output without authorisation",
+              "path_steps": [
+                "T1",
+                "T6"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3"
+              ],
+              "TAF": 2,
+              "CAL": 3,
+              "impact": "Major",
+              "success_criterion": "Display content is altered to attacker-controlled imagery or text without prior authentication or per-method authorisation."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DS_02_LOSS_OF_SAFETY_CRITICAL_VEHICLE_CONTROL",
+      "description": "Loss of safety-critical vehicle control (braking, steering, powertrain, transmission) caused by an attacker who has pivoted from the IVI domain to a safety-critical in-vehicle bus and injects forged ECU command messages while the vehicle is in motion.",
+      "affected_road_user_harm": "Risk of loss of life or serious injury to vehicle occupants and other road users due to loss of braking, loss of steering control, unintended engine shutdown, or loss of gear selection while driving.",
+      "impact": {
+        "safety": "Severe",
+        "financial": "Major",
+        "operational": "Severe",
+        "privacy": "Negligible",
+        "overall": "Severe"
+      },
+      "threat_scenarios": [
+        {
+          "id": "TS_03_SAFETY_BUS_TRAFFIC_INTERCEPTION",
+          "title": "Attacker captures safety-critical in-vehicle bus traffic via an IVI-reachable bus bridge",
+          "asset_id": "SAFETY_CRITICAL_BUS_TRAFFIC",
+          "asset_name": "Safety-critical in-vehicle bus traffic stream",
+          "attack_vector": "IVI-reachable bus bridge (precondition: IVI domain compromised)",
+          "real_world_reference": "Miller and Valasek 2015: pivot from compromised OMAP head unit to V850 / IOC bridge, enabling observation of CAN-C traffic.",
+          "CAL": 4,
+          "TAF": 3,
+          "current_attack_feasibility": "Medium",
+          "cybersecurity_goal": "Safety-critical bus traffic must not be observable from the IVI domain. Domain isolation between IVI and safety-critical buses must prevent unauthorised passive monitoring.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FDP_IFC.1",
+              "FDP_IFF.1"
+            ],
+            "nist_sp_800_53": [
+              "SC-7",
+              "AC-4"
+            ]
+          },
+          "preconditions": [
+            "Attacker has a foothold on the IVI domain (e.g. via TS_01 or TS_02).",
+            "An IVI-reachable bus bridge exists (or can be activated through the foothold)."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Bypass domain isolation to gain unauthorised access to the in-vehicle bus bridge from the IVI domain.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_IFC.1",
+                  "FDP_IFF.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7",
+                  "AC-4"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Without authorisation, intercept frames from the safety-critical bus through the compromised bridge by passively reading bus traffic.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_IFC.1",
+                  "FDP_IFF.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7",
+                  "AC-4"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "SAFETY_CRITICAL_BUS_TRAFFIC_CAPTURED",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "G1",
+                  "G2"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_FOOTHOLD_ON_IVI_DOMAIN"
+              },
+              {
+                "id": "G1",
+                "node_type": "goal",
+                "label": "GAIN_ACCESS_TO_IN_VEHICLE_BUS_BRIDGE",
+                "logic": "AND",
+                "children": [
+                  "S1"
+                ]
+              },
+              {
+                "id": "G2",
+                "node_type": "goal",
+                "label": "CAPTURE_SAFETY_CRITICAL_ECU_FRAMES",
+                "logic": "AND",
+                "children": [
+                  "S2"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1"
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_03_BUS_INTERCEPT",
+              "path_description": "IVI foothold -> access bus bridge -> capture safety-critical traffic",
+              "path_steps": [
+                "T1",
+                "T2"
+              ],
+              "cc_sfr": [
+                "FDP_IFC.1",
+                "FDP_IFF.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-7",
+                "AC-4"
+              ],
+              "TAF": 3,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "CAN frames from safety-critical ECUs are captured; target arbitration IDs and message patterns are identifiable from the captured traffic."
+            }
+          ]
+        },
+        {
+          "id": "TS_04_SAFETY_CRITICAL_CAN_INJECTION",
+          "title": "Attacker reverse-engineers captured safety-bus traffic and injects forged command messages to disrupt braking, steering, powertrain, or transmission",
+          "asset_id": "SAFETY_CRITICAL_BUS_DOMAIN",
+          "asset_name": "Safety-critical in-vehicle bus (braking, steering, powertrain, transmission ECUs)",
+          "attack_vector": "Compromised bus bridge with intercepted traffic (precondition: TS_03)",
+          "real_world_reference": "Miller and Valasek 2015: CAN-C control of braking, steering, transmission, and engine behaviour after internal compromise.",
+          "CAL": 4,
+          "TAF": 3,
+          "current_attack_feasibility": "Medium",
+          "cybersecurity_goal": "Safety-critical buses must enforce message authentication so that frames originating from a compromised bridge are not accepted by safety-critical ECUs.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FDP_UIT.1",
+              "FDP_ACC.1",
+              "FCS_COP.1"
+            ],
+            "nist_sp_800_53": [
+              "SC-8",
+              "SC-8(1)",
+              "AC-3"
+            ]
+          },
+          "preconditions": [
+            "Attacker has captured safety-critical bus traffic and can transmit onto the bus (achieved via TS_03)."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Reverse-engineer the captured safety-critical bus traffic to derive valid frame format, arbitration IDs, and payload patterns for each target ECU.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_IFC.1",
+                  "FDP_IFF.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7",
+                  "AC-4"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Transmit a forged braking-control frame onto the safety-critical bus to disrupt or disable braking.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1",
+                  "FDP_ACC.1",
+                  "FCS_COP.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)",
+                  "AC-3"
+                ]
+              }
+            },
+            "T3": {
+              "description": "Transmit a forged steering-control frame onto the safety-critical bus to alter steering behaviour.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1",
+                  "FDP_ACC.1",
+                  "FCS_COP.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)",
+                  "AC-3"
+                ]
+              }
+            },
+            "T4": {
+              "description": "Transmit a forged powertrain-control frame onto the safety-critical bus to disrupt or stop the engine.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1",
+                  "FDP_ACC.1",
+                  "FCS_COP.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)",
+                  "AC-3"
+                ]
+              }
+            },
+            "T5": {
+              "description": "Transmit a forged transmission-control frame onto the safety-critical bus to disable gear shifting.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1",
+                  "FDP_ACC.1",
+                  "FCS_COP.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)",
+                  "AC-3"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "SAFETY_CRITICAL_ECU_EFFECT_ACHIEVED",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "G_RE",
+                  "L_TARGET"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_INTERCEPTED_SAFETY_BUS_TRAFFIC_AND_CAN_TRANSMIT"
+              },
+              {
+                "id": "G_RE",
+                "node_type": "goal",
+                "label": "DERIVE_VALID_TARGET_FRAME_PATTERNS",
+                "logic": "AND",
+                "children": [
+                  "S1"
+                ]
+              },
+              {
+                "id": "L_TARGET",
+                "node_type": "logic",
+                "logic": "OR",
+                "children": [
+                  "G_BRAKE",
+                  "G_STEER",
+                  "G_PWR",
+                  "G_TRANS"
+                ]
+              },
+              {
+                "id": "G_BRAKE",
+                "node_type": "goal",
+                "label": "DISRUPT_BRAKING",
+                "logic": "AND",
+                "children": [
+                  "S2"
+                ]
+              },
+              {
+                "id": "G_STEER",
+                "node_type": "goal",
+                "label": "ALTER_STEERING",
+                "logic": "AND",
+                "children": [
+                  "S3"
+                ]
+              },
+              {
+                "id": "G_PWR",
+                "node_type": "goal",
+                "label": "DISRUPT_POWERTRAIN",
+                "logic": "AND",
+                "children": [
+                  "S4"
+                ]
+              },
+              {
+                "id": "G_TRANS",
+                "node_type": "goal",
+                "label": "DISABLE_TRANSMISSION_SHIFTING",
+                "logic": "AND",
+                "children": [
+                  "S5"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1",
+                "reusable": true
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              },
+              {
+                "id": "S3",
+                "node_type": "step",
+                "step_ref": "T3"
+              },
+              {
+                "id": "S4",
+                "node_type": "step",
+                "step_ref": "T4"
+              },
+              {
+                "id": "S5",
+                "node_type": "step",
+                "step_ref": "T5"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_04A_BRAKING",
+              "path_description": "Reverse-engineer safety-bus traffic, then transmit forged braking-control frame",
+              "path_steps": [
+                "T1",
+                "T2"
+              ],
+              "cc_sfr": [
+                "FDP_UIT.1",
+                "FDP_ACC.1",
+                "FCS_COP.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-8",
+                "SC-8(1)",
+                "AC-3"
+              ],
+              "TAF": 3,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "The braking ECU accepts the forged frame; braking function is disrupted or disabled."
+            },
+            {
+              "path_id": "P_TS_04B_STEERING",
+              "path_description": "Reverse-engineer safety-bus traffic, then transmit forged steering-control frame",
+              "path_steps": [
+                "T1",
+                "T3"
+              ],
+              "cc_sfr": [
+                "FDP_UIT.1",
+                "FDP_ACC.1",
+                "FCS_COP.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-8",
+                "SC-8(1)",
+                "AC-3"
+              ],
+              "TAF": 3,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "The steering ECU accepts the forged frame; steering behaviour is altered without authorisation."
+            },
+            {
+              "path_id": "P_TS_04C_POWERTRAIN",
+              "path_description": "Reverse-engineer safety-bus traffic, then transmit forged powertrain-control frame",
+              "path_steps": [
+                "T1",
+                "T4"
+              ],
+              "cc_sfr": [
+                "FDP_UIT.1",
+                "FDP_ACC.1",
+                "FCS_COP.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-8",
+                "SC-8(1)",
+                "AC-3"
+              ],
+              "TAF": 3,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "The powertrain ECU accepts the forged frame; engine operation is disrupted or stopped."
+            },
+            {
+              "path_id": "P_TS_04D_TRANSMISSION",
+              "path_description": "Reverse-engineer safety-bus traffic, then transmit forged transmission-control frame",
+              "path_steps": [
+                "T1",
+                "T5"
+              ],
+              "cc_sfr": [
+                "FDP_UIT.1",
+                "FDP_ACC.1",
+                "FCS_COP.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-8",
+                "SC-8(1)",
+                "AC-3"
+              ],
+              "TAF": 3,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "The transmission ECU accepts the forged frame; gear shifting is disabled."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DS_03_LOSS_OF_COMFORT_DOMAIN_INTEGRITY",
+      "description": "Unauthorised manipulation of the comfort domain (cabin climate and audio amplifier behaviour) caused by an attacker injecting forged messages onto the comfort bus.",
+      "affected_road_user_harm": "Loss of operational integrity of cabin comfort and audio functions; potential driver distraction from sudden cabin state changes while driving.",
+      "impact": {
+        "safety": "Negligible",
+        "financial": "Moderate",
+        "operational": "Major",
+        "privacy": "Negligible",
+        "overall": "Moderate"
+      },
+      "threat_scenarios": [
+        {
+          "id": "TS_05_COMFORT_BUS_INJECTION",
+          "title": "Attacker reverse-engineers comfort-bus traffic and injects forged frames to manipulate climate or audio amplifier state",
+          "asset_id": "COMFORT_BUS_DOMAIN",
+          "asset_name": "Comfort domain bus (climate-control ECU, audio amplifier ECU)",
+          "attack_vector": "Comfort bus access (precondition: bus reachable and observable; lower isolation than safety-critical bus)",
+          "real_world_reference": "Miller and Valasek 2015 documents domain-level CAN injection. The comfort-bus surrogate represents the Jeep Cherokee's CAN-IHS analogue.",
+          "CAL": 2,
+          "TAF": 3,
+          "current_attack_feasibility": "Medium",
+          "cybersecurity_goal": "Comfort-bus messages targeting state-changing ECUs must be authenticated; unauthenticated forged frames must be rejected.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FDP_UIT.1",
+              "FDP_ACC.1"
+            ],
+            "nist_sp_800_53": [
+              "SC-8",
+              "SC-8(1)",
+              "AC-3"
+            ]
+          },
+          "preconditions": [
+            "Attacker has access to the comfort bus and can both observe and transmit on it (e.g. via a compromised IVI bridge or a less-isolated comfort gateway)."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Reverse-engineer observed comfort-bus traffic to derive valid frame format and payload patterns for the climate-control and audio amplifier ECUs.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_IFC.1",
+                  "FDP_IFF.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7",
+                  "AC-4"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Transmit a forged climate-control frame onto the comfort bus to alter cabin environment state.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)",
+                  "AC-3"
+                ]
+              }
+            },
+            "T3": {
+              "description": "Transmit a forged audio-control frame onto the comfort bus to alter audio amplifier output.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)",
+                  "AC-3"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "COMFORT_DOMAIN_STATE_MANIPULATED",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "G_RE",
+                  "L_TARGET"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_OBSERVATION_AND_TRANSMIT_ACCESS_TO_COMFORT_BUS"
+              },
+              {
+                "id": "G_RE",
+                "node_type": "goal",
+                "label": "DERIVE_VALID_COMFORT_FRAME_PATTERNS",
+                "logic": "AND",
+                "children": [
+                  "S1"
+                ]
+              },
+              {
+                "id": "L_TARGET",
+                "node_type": "logic",
+                "logic": "OR",
+                "children": [
+                  "G_CLIMATE",
+                  "G_AUDIO"
+                ]
+              },
+              {
+                "id": "G_CLIMATE",
+                "node_type": "goal",
+                "label": "MANIPULATE_CABIN_CLIMATE",
+                "logic": "AND",
+                "children": [
+                  "S2"
+                ]
+              },
+              {
+                "id": "G_AUDIO",
+                "node_type": "goal",
+                "label": "MANIPULATE_AUDIO_AMPLIFIER",
+                "logic": "AND",
+                "children": [
+                  "S3"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1",
+                "reusable": true
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              },
+              {
+                "id": "S3",
+                "node_type": "step",
+                "step_ref": "T3"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_05A_CLIMATE",
+              "path_description": "Reverse-engineer comfort-bus traffic, then transmit forged climate-control frame",
+              "path_steps": [
+                "T1",
+                "T2"
+              ],
+              "cc_sfr": [
+                "FDP_UIT.1",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-8",
+                "SC-8(1)",
+                "AC-3"
+              ],
+              "TAF": 3,
+              "CAL": 2,
+              "impact": "Moderate",
+              "success_criterion": "The climate-control ECU accepts the forged frame; cabin environment settings are altered without authorisation."
+            },
+            {
+              "path_id": "P_TS_05B_AUDIO",
+              "path_description": "Reverse-engineer comfort-bus traffic, then transmit forged audio-control frame",
+              "path_steps": [
+                "T1",
+                "T3"
+              ],
+              "cc_sfr": [
+                "FDP_UIT.1",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-8",
+                "SC-8(1)",
+                "AC-3"
+              ],
+              "TAF": 3,
+              "CAL": 2,
+              "impact": "Moderate",
+              "success_criterion": "The audio ECU accepts the forged frame; audio output is altered without authorisation."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DS_04_LOSS_OF_ECU_FIRMWARE_INTEGRITY_VIA_OTA",
+      "description": "Loss of ECU firmware integrity caused by an attacker delivering an unsigned firmware package, or by an attacker performing firmware operations over an unprotected channel that lacks transport-layer confidentiality and integrity.",
+      "affected_road_user_harm": "Persistent ECU compromise enabling subsequent safety-critical or operational impact (loss of vehicle control, persistent surveillance) across the vehicle's operational lifetime.",
+      "impact": {
+        "safety": "Severe",
+        "financial": "Major",
+        "operational": "Severe",
+        "privacy": "Moderate",
+        "overall": "Severe"
+      },
+      "threat_scenarios": [
+        {
+          "id": "TS_06_OTA_INTEGRITY_OR_TRANSPORT_BYPASS",
+          "title": "Attacker bypasses OTA firmware signature verification, or performs firmware operations over an unprotected transport",
+          "asset_id": "OTA_FIRMWARE_UPDATE_SERVICE",
+          "asset_name": "OTA firmware update service endpoint",
+          "attack_vector": "Remote network reachability to the OTA service",
+          "real_world_reference": "Miller and Valasek 2015: V850 firmware update lacked cryptographic signature verification; update images could be modified and re-flashed without integrity checks. Modern OTA endpoints add a TLS toggle, which the surrogate emulates as an enforce/disable flag.",
+          "CAL": 4,
+          "TAF": 2,
+          "current_attack_feasibility": "High",
+          "cybersecurity_goal": "Firmware packages must be cryptographically signed and verified before acceptance. The OTA channel must enforce transport-layer confidentiality and integrity.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FCS_COP.1",
+              "FCS_CKM.1",
+              "FPT_TUD.1",
+              "FDP_UIT.1"
+            ],
+            "nist_sp_800_53": [
+              "SI-7",
+              "SC-13",
+              "CM-5",
+              "SC-8",
+              "SC-8(1)"
+            ]
+          },
+          "preconditions": [
+            "Attacker has network reachability to the OTA service endpoint."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Submit a firmware package that lacks a valid cryptographic signature to the OTA service.",
+              "binding": "CONN_03",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FCS_COP.1",
+                  "FCS_CKM.1",
+                  "FPT_TUD.1"
+                ],
+                "nist_sp_800_53": [
+                  "SI-7",
+                  "SC-13",
+                  "CM-5"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Open a plaintext (non-TLS) connection to the OTA service endpoint, exploiting absent transport-layer enforcement.",
+              "binding": "CONN_13",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)"
+                ]
+              }
+            },
+            "T3": {
+              "description": "Issue a firmware update operation over the unprotected (non-TLS) channel and observe that the operation completes without transport-layer protection.",
+              "binding": "CONN_13",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_UIT.1",
+                  "FCS_COP.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-8",
+                  "SC-8(1)",
+                  "SI-7"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "OTA_FIRMWARE_INTEGRITY_OR_TRANSPORT_BYPASSED",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "L_BYPASS"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_NETWORK_ACCESS_TO_OTA_SERVICE"
+              },
+              {
+                "id": "L_BYPASS",
+                "node_type": "logic",
+                "logic": "OR",
+                "children": [
+                  "G_SIG",
+                  "G_TRANSPORT"
+                ]
+              },
+              {
+                "id": "G_SIG",
+                "node_type": "goal",
+                "label": "BYPASS_FIRMWARE_SIGNATURE_VERIFICATION",
+                "logic": "AND",
+                "children": [
+                  "S1"
+                ]
+              },
+              {
+                "id": "G_TRANSPORT",
+                "node_type": "goal",
+                "label": "BYPASS_TRANSPORT_LAYER_PROTECTION",
+                "logic": "AND",
+                "children": [
+                  "S2",
+                  "S3"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1"
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              },
+              {
+                "id": "S3",
+                "node_type": "step",
+                "step_ref": "T3"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_06A_UNSIGNED_FIRMWARE",
+              "path_description": "Submit unsigned firmware package; signature verification absent or disabled",
+              "path_steps": [
+                "T1"
+              ],
+              "cc_sfr": [
+                "FCS_COP.1",
+                "FCS_CKM.1",
+                "FPT_TUD.1"
+              ],
+              "nist_sp_800_53": [
+                "SI-7",
+                "SC-13",
+                "CM-5"
+              ],
+              "TAF": 2,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "An unsigned or falsely signed firmware package is accepted for installation by the OTA service; no signature verification rejection is observed."
+            },
+            {
+              "path_id": "P_TS_06B_TRANSPORT_BYPASS",
+              "path_description": "Connect over unprotected transport, then perform firmware operation; no TLS enforced",
+              "path_steps": [
+                "T2",
+                "T3"
+              ],
+              "cc_sfr": [
+                "FDP_UIT.1",
+                "FCS_COP.1"
+              ],
+              "nist_sp_800_53": [
+                "SC-8",
+                "SC-8(1)",
+                "SI-7"
+              ],
+              "TAF": 2,
+              "CAL": 4,
+              "impact": "Severe",
+              "success_criterion": "Firmware update operations are completed over an unencrypted channel; no transport-layer protection is observed on the OTA service."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DS_05_UNAUTHORISED_SAFETY_ECU_CONTROL_VIA_DIAGNOSTIC_GATEWAY",
+      "description": "Unauthorised execution of safety-relevant diagnostic operations (e.g. ECU reset) caused by an attacker bypassing the diagnostic gateway's routing authentication and the UDS SecurityAccess seed-key challenge.",
+      "affected_road_user_harm": "Sudden ECU reset while the vehicle is in operation can disable safety-relevant functionality momentarily, with potential for loss of vehicle control.",
+      "impact": {
+        "safety": "Major",
+        "financial": "Major",
+        "operational": "Severe",
+        "privacy": "Negligible",
+        "overall": "Major"
+      },
+      "threat_scenarios": [
+        {
+          "id": "TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET",
+          "title": "Attacker probes the diagnostic gateway, bypasses routing authentication and SecurityAccess, and executes an unauthorised ECU reset",
+          "asset_id": "DIAGNOSTIC_GATEWAY",
+          "asset_name": "Remote diagnostic gateway (DoIP / UDS)",
+          "attack_vector": "Remote network reachability to the diagnostic gateway",
+          "real_world_reference": "Miller and Valasek 2015: SecurityAccess bypass on Jeep diagnostic interface. The surrogate transports diagnostic exchange over DoIP (ISO 13400).",
+          "CAL": 3,
+          "TAF": 2,
+          "current_attack_feasibility": "High",
+          "cybersecurity_goal": "The diagnostic gateway must enforce authenticated routing activation and a non-trivial UDS SecurityAccess seed-key challenge before permitting safety-relevant operations such as ECUReset.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FIA_UAU.2",
+              "FDP_ACC.1",
+              "FDP_ACF.1"
+            ],
+            "nist_sp_800_53": [
+              "IA-2",
+              "AC-3",
+              "SC-7"
+            ]
+          },
+          "preconditions": [
+            "Attacker has network reachability to the diagnostic gateway endpoint."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Send an unauthorised diagnostic protocol probe to the gateway endpoint and observe whether it responds.",
+              "binding": "CONN_11",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Send an unauthenticated routing-activation request to the diagnostic gateway, exploiting absent routing authentication, and obtain an active routing context.",
+              "binding": "CONN_11",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-17"
+                ]
+              }
+            },
+            "T3": {
+              "description": "Exploit weak or absent seed-key validation in the UDS SecurityAccess challenge-response.",
+              "binding": "CONN_11",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACF.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3"
+                ]
+              }
+            },
+            "T4": {
+              "description": "Issue an unauthorised UDS ECUReset request through the bypassed diagnostic session.",
+              "binding": "CONN_11",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_ACC.1",
+                  "FDP_ACF.1"
+                ],
+                "nist_sp_800_53": [
+                  "AC-3"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "UNAUTHORISED_ECU_RESET_VIA_DIAGNOSTIC_GATEWAY",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "G1",
+                  "G2",
+                  "G3",
+                  "G4"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_NETWORK_ACCESS_TO_DIAGNOSTIC_GATEWAY"
+              },
+              {
+                "id": "G1",
+                "node_type": "goal",
+                "label": "REACH_DIAGNOSTIC_GATEWAY_ENDPOINT",
+                "logic": "AND",
+                "children": [
+                  "S1"
+                ]
+              },
+              {
+                "id": "G2",
+                "node_type": "goal",
+                "label": "GAIN_UNAUTHORISED_DIAGNOSTIC_GATEWAY_ACCESS",
+                "logic": "AND",
+                "children": [
+                  "S2"
+                ]
+              },
+              {
+                "id": "G3",
+                "node_type": "goal",
+                "label": "BYPASS_DIAGNOSTIC_SECURITY_ACCESS",
+                "logic": "AND",
+                "children": [
+                  "S3"
+                ]
+              },
+              {
+                "id": "G4",
+                "node_type": "goal",
+                "label": "EXECUTE_UNAUTHORISED_ECU_RESET",
+                "logic": "AND",
+                "children": [
+                  "S4"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1"
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              },
+              {
+                "id": "S3",
+                "node_type": "step",
+                "step_ref": "T3"
+              },
+              {
+                "id": "S4",
+                "node_type": "step",
+                "step_ref": "T4"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_07_DOIP_BYPASS_RESET",
+              "path_description": "Probe DoIP endpoint -> unauthenticated routing -> SecurityAccess bypass -> ECU reset",
+              "path_steps": [
+                "T1",
+                "T2",
+                "T3",
+                "T4"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1",
+                "FDP_ACF.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3",
+                "SC-7",
+                "AC-17"
+              ],
+              "TAF": 2,
+              "CAL": 3,
+              "impact": "Major",
+              "success_criterion": "ECU reset is executed without valid security credentials; the diagnostic gateway has not enforced the SecurityAccess seed-key challenge."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "DS_06_SOA_ENDPOINT_ABUSE",
+      "description": "Unauthorised disclosure of vehicle data and unauthorised manipulation of vehicle state caused by an attacker invoking service-oriented (SOA) methods without authentication on a vehicle-internal service endpoint.",
+      "affected_road_user_harm": "Loss of privacy of occupants (sensitive vehicle telemetry leaked) and loss of operational integrity of vehicle state (cabin state altered remotely).",
+      "impact": {
+        "safety": "Moderate",
+        "financial": "Moderate",
+        "operational": "Major",
+        "privacy": "Major",
+        "overall": "Major"
+      },
+      "threat_scenarios": [
+        {
+          "id": "TS_08_SOA_UNAUTHENTICATED_INVOCATION",
+          "title": "Attacker probes the SOA endpoint and invokes read or write methods without authentication",
+          "asset_id": "SOA_VEHICLE_SERVICE_ENDPOINT",
+          "asset_name": "Service-oriented vehicle service endpoint (e.g. AUTOSAR SOME/IP-style)",
+          "attack_vector": "Remote network reachability to the SOA endpoint",
+          "real_world_reference": "Not directly present in Miller and Valasek 2015. Represents a modern AUTOSAR service-oriented architecture extension exposed by the surrogate emulator with a toggleable authentication flag.",
+          "CAL": 3,
+          "TAF": 2,
+          "current_attack_feasibility": "High",
+          "cybersecurity_goal": "SOA service methods must enforce authentication; unauthenticated requests to read or write methods must be rejected with an access-denied response.",
+          "selected_security_requirements": {
+            "cc_sfr": [
+              "FIA_UAU.2",
+              "FDP_ACC.1"
+            ],
+            "nist_sp_800_53": [
+              "IA-2",
+              "AC-3"
+            ]
+          },
+          "preconditions": [
+            "Attacker has network reachability to the SOA service endpoint."
+          ],
+          "attack_steps": {
+            "T1": {
+              "description": "Send a service-discovery request to the SOA endpoint and observe the returned method list, exposed without authentication.",
+              "binding": "CONN_12",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "SC-7"
+                ]
+              }
+            },
+            "T2": {
+              "description": "Invoke a read-oriented service method (e.g. GetSpeed, GetLocation) on the SOA endpoint without supplying authentication credentials.",
+              "binding": "CONN_12",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3"
+                ]
+              }
+            },
+            "T3": {
+              "description": "Invoke a state-changing service method (e.g. SetHVAC) on the SOA endpoint without supplying authentication credentials.",
+              "binding": "CONN_12",
+              "mapped_requirements": {
+                "cc_sfr": [
+                  "FIA_UAU.2",
+                  "FDP_ACC.1"
+                ],
+                "nist_sp_800_53": [
+                  "IA-2",
+                  "AC-3"
+                ]
+              }
+            }
+          },
+          "attack_tree": {
+            "schema_version": "2.0",
+            "root": "N0",
+            "nodes": [
+              {
+                "id": "N0",
+                "node_type": "goal",
+                "label": "UNAUTHENTICATED_SOA_ENDPOINT_ABUSE",
+                "logic": "AND",
+                "children": [
+                  "C0",
+                  "G_PROBE",
+                  "L_OUTCOME"
+                ]
+              },
+              {
+                "id": "C0",
+                "node_type": "condition",
+                "label": "ATTACKER_HAS_NETWORK_ACCESS_TO_SOA_ENDPOINT"
+              },
+              {
+                "id": "G_PROBE",
+                "node_type": "goal",
+                "label": "REACH_SOA_ENDPOINT",
+                "logic": "AND",
+                "children": [
+                  "S1"
+                ]
+              },
+              {
+                "id": "L_OUTCOME",
+                "node_type": "logic",
+                "logic": "OR",
+                "children": [
+                  "G_READ",
+                  "G_WRITE"
+                ]
+              },
+              {
+                "id": "G_READ",
+                "node_type": "goal",
+                "label": "EXFILTRATE_SENSITIVE_DATA_VIA_READ_METHODS",
+                "logic": "AND",
+                "children": [
+                  "S2"
+                ]
+              },
+              {
+                "id": "G_WRITE",
+                "node_type": "goal",
+                "label": "MODIFY_VEHICLE_STATE_VIA_WRITE_METHODS",
+                "logic": "AND",
+                "children": [
+                  "S3"
+                ]
+              },
+              {
+                "id": "S1",
+                "node_type": "step",
+                "step_ref": "T1",
+                "reusable": true
+              },
+              {
+                "id": "S2",
+                "node_type": "step",
+                "step_ref": "T2"
+              },
+              {
+                "id": "S3",
+                "node_type": "step",
+                "step_ref": "T3"
+              }
+            ]
+          },
+          "attack_paths": [
+            {
+              "path_id": "P_TS_08A_READ_EXFIL",
+              "path_description": "Probe SOA endpoint, then invoke read-oriented methods without authentication to disclose sensitive vehicle data",
+              "path_steps": [
+                "T1",
+                "T2"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3"
+              ],
+              "TAF": 2,
+              "CAL": 3,
+              "impact": "Major",
+              "success_criterion": "Sensitive vehicle data (e.g. speed, location) is returned by the SOA endpoint without prior authentication."
+            },
+            {
+              "path_id": "P_TS_08B_WRITE_MANIPULATION",
+              "path_description": "Probe SOA endpoint, then invoke state-changing methods without authentication to modify vehicle state",
+              "path_steps": [
+                "T1",
+                "T3"
+              ],
+              "cc_sfr": [
+                "FIA_UAU.2",
+                "FDP_ACC.1"
+              ],
+              "nist_sp_800_53": [
+                "IA-2",
+                "AC-3"
+              ],
+              "TAF": 2,
+              "CAL": 3,
+              "impact": "Major",
+              "success_criterion": "Vehicle state (e.g. HVAC) is modified by the SOA endpoint without prior authentication."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "review_notes": [
+    "v6.3 changes from v6.2: restored adversarial qualifiers on 8 leaf step descriptions that v6.2 had stripped while removing 'by'-clauses. Affected steps: TS_01.T2, TS_03.T2, TS_06.T2, TS_06.T3, TS_07.T1, TS_07.T2, TS_07.T4, TS_08.T1.",
+    "v6.3 changes from v6.2: extended method_note.atomic_step_principle with the Schneier adversarial test ('would a normal user perform this exact action?'). Each leaf must remain distinguishable from a benign operation, via a leaf-level qualifier (unauthorised / exploiting / without authentication / bypassed).",
+    "v6.3 unchanged from v6.2: tree topology, step count per scenario, attack_paths, cross-refs. v6.2's gain on TS_02 (parent G-label carries the outcome; leaf is the atomic invocation) is preserved.",
+    "v6.2 changes from v6.1: removed all 'X by invoking Y' compound-leaf phrasings (TS_02 T2-T6, TS_08 T2-T3). The 'X' (the higher-level outcome) is carried by the parent G-node label; the leaf description now states only the atomic invocation 'Y'. Tree topology unchanged.",
+    "v6.2 changes from v6.1: reworded 'Probe X and confirm Y' phrasings (TS_01 T2, TS_07 T1, TS_08 T1) as a single send-and-observe operation, which is one runtime request-response exchange and therefore a single atomic step.",
+    "v6.2 changes from v6.1: TS_06 T1-T3 and TS_07 T2-T4 also tightened (removed 'exploit ... by ...' and 'execute ... through ...' compound clauses). Each leaf now names exactly one runtime-atomic action (send / open / invoke / submit).",
+    "v6.2 changes from v6.1: method_note.atomic_step_principle extended with the rule that step descriptions describe ONLY the atomic operation; the higher-level outcome is carried by the parent G-node label, not embedded inside the leaf description.",
+    "v6.1 history: TS_01 expanded from 2 steps to 4 (enumerate -> probe -> transport handshake -> session establishment). TS_04 restructured per atomic-step principle: 1 reusable reverse-engineer + 4 per-ECU atomic transmit (5 steps total). TS_05 same treatment (3 steps). TS_07 added probe preamble (4 steps). TS_08 added probe preamble as reusable shared step (3 steps).",
+    "v6.2: success_criterion is preserved per attack_path as a pipeline-only hand-off to the test-execution stage; it is not a 21434 TARA artefact field."
+  ]
+}

@@ -1,0 +1,15 @@
+# Core Python requirements for TARA Pipeline
+# Most functionality uses standard library only
+
+# Optional: for enhanced LLM features
+# anthropic>=0.25.0
+
+# Optional: for web research functionality
+# requests>=2.31.0
+# beautifulsoup4>=4.12.0
+
+# Optional: for advanced JSON processing
+# jsonschema>=4.17.0
+
+# Note: The pipeline is designed to work with minimal dependencies
+# All optional dependencies have fallback implementations
