@@ -131,7 +131,7 @@ python core_pipeline/pipeline_runner.py \
 #### 📁 개별 테스트 스크립트 (`output/run_YYYYMMDD_HHMMSS/steps/`)
 
 각 공격 단계별로 실행 가능한 Python 스크립트가 생성됩니다:
-- **T1.py, T2.py, T3.py, T4.py**: 순차 실행 스크립트
+- **Tn.py(T1.py, T2.py 등)**: 순차 실행 스크립트
 - **독립 실행 가능**: 각 스크립트는 개별적으로도 테스트 가능
 - **표준 인터페이스**: `run_step(context, artifacts)` 함수 제공
 - **실제 프로토콜 구현**: DoIP, CAN, D-Bus, SOME/IP 등 실제 라이브러리 사용
@@ -142,7 +142,7 @@ python core_pipeline/pipeline_runner.py \
 개별 스크립트들이 하나로 통합된 완전한 테스트 하네스:
 - **파일명**: [시나리오이름]__[경로이름].py 형태
 - **기능**: 전체 공격 시나리오 연쇄적 자동 실행
-- **연쇄 실행**: T1 실패 시 → T2, T3, T4 자동 스킵 (`skipped_chain_failure`)
+- **연쇄 실행**: T1 실패 시 → T2, T3, T4 자동 실패 (`skipped_chain_failure`)
 - **Artifacts 전달**: 각 단계 결과물이 다음 단계로 자동 전달
 - **결과**: JSON 형태의 구조화된 관찰 데이터 및 실행 상태
 
