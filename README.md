@@ -3,144 +3,236 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![LLM Powered](https://img.shields.io/badge/🤖-LLM%20Powered-purple.svg)](https://www.anthropic.com/claude)
 
 > **Transform TARA attack trees into executable automotive security test scripts with AI-powered code generation**
-
-![TARA Pipeline Flow](https://via.placeholder.com/800x400/2E86AB/FFFFFF?text=TARA+Attack+Tree+→+Executable+Scripts)
-
-## ✨ Features
-
-🎯 **TARA to Code**: Convert ISO/SAE 21434 attack trees into runnable Python scripts  
-🤖 **AI-Powered**: LLM-enhanced script generation with Claude Sonnet  
-🔒 **Security Controls**: NIST SP 800-53 & Common Criteria SFR integration  
-🚗 **Automotive Protocols**: DoIP, CAN, SOME/IP, D-Bus support  
-📊 **Real-time Research**: Dynamic library discovery and endpoint resolution  
-🔄 **Timestamped Runs**: Preserve all execution results automatically  
-⚡ **No-LLM Mode**: Works without API keys using intelligent stubs
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- *(Optional)* Anthropic API key for enhanced LLM features
+- *(Optional)* Anthropic API key for LLM features
 
 ### 1. Installation
 ```bash
-git clone https://github.com/yourusername/tara-pipeline.git
-cd tara-pipeline
+git clone https://github.com/sungchaemin/TARATest.git
+cd TARATest
 pip install -r requirements.txt  # Optional dependencies
 ```
 
 ### 2. Basic Usage
 ```bash
 # Test the setup
-python test_setup.py
+python examples/test_setup.py
 
 # Run without LLM (stub mode) 
-python example_run.py
+python examples/example_run.py
 
 # Run with LLM features
 export ANTHROPIC_API_KEY="your-api-key"
-python pipeline_runner.py inputs/threats.json inputs/system_model.json output/
+python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.json output/
 ```
 
 ### 3. Target Specific Scenarios
 ```bash
 # Generate scripts for specific attack scenarios
-python pipeline_runner.py inputs/threats.json inputs/system_model.json output/ \
+python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.json output/ \
   --scenarios TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET
 
 # Multiple scenarios
-python pipeline_runner.py inputs/threats.json inputs/system_model.json output/ \
+python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.json output/ \
   --scenarios TS_04_SAFETY_CRITICAL_CAN_INJECTION TS_05_COMFORT_BUS_INJECTION
 ```
 
-## 📋 Available Attack Scenarios
+## 📋 프로젝트 소개
 
-| Scenario ID | Description | Protocols |
-|-------------|-------------|-----------|
-| `TS_01_REMOTE_IVI_FOOTHOLD` | Remote IVI system compromise | D-Bus TCP |
-| `TS_02_UNAUTHORISED_IVI_FUNCTION_ABUSE` | IVI function manipulation | D-Bus TCP |
-| `TS_03_SAFETY_BUS_TRAFFIC_INTERCEPTION` | Safety bus traffic capture | CAN |
-| `TS_04_SAFETY_CRITICAL_CAN_INJECTION` | Safety system CAN attacks | CAN |
-| `TS_05_COMFORT_BUS_INJECTION` | Comfort system attacks | CAN |
-| `TS_06_OTA_INTEGRITY_OR_TRANSPORT_BYPASS` | OTA security bypass | SOME/IP |
-| `TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET` | Diagnostic system compromise | DoIP |
-| `TS_08_SOA_UNAUTHENTICATED_INVOCATION` | SOA service exploitation | SOME/IP |
+**TARA Pipeline**은 자동차 보안 위험 분석(TARA)에서 생성된 공격 트리를 실제 실행 가능한 보안 테스트 스크립트로 자동 변환하는 연구 프로젝트입니다.
 
-## 🏗️ Pipeline Architecture
+### 🎯 핵심 기능
+- **AI 기반 코드 생성**: Claude Sonnet LLM을 활용한 지능형 테스트 스크립트 자동 생성
+- **실제 프로토콜 지원**: DoIP, CAN, D-Bus, SOME/IP 등 자동차 통신 프로토콜 완전 지원
+- **보안 표준 준수**: NIST SP 800-53, Common Criteria 보안 컨트롤과 자동 매핑
+- **실시간 연구**: 최신 라이브러리 자동 탐색 및 엔드포인트 해석
+- **타임스탬프 보존**: 모든 실행 결과와 증거 자료 자동 보관
 
-```mermaid
-graph LR
-    A[TARA Input] --> B[Step 1: Parse]
-    B --> C[Step 2: Decompose]
-    C --> D[Step 3A: Bind Controls]
-    D --> E[Step 3B: Generate Scripts]
-    E --> F[Step 5: Assemble]
-    F --> G[Executable Scripts]
-    
-    H[LLM] --> D
-    H --> E
-    I[NIST/CC Controls] --> D
-    J[Testbed Config] --> D
+### 🔬 연구 목표
+ISO/SAE 21434 표준에 따른 TARA 분석 결과를 바탕으로, 실제 테스트베드에서 실행 가능한 침투 테스트 스크립트를 자동 생성하여 자동차 보안 테스팅의 효율성을 극대화합니다.
+
+## 📁 프로젝트 구조
+
+```
+📁 TARATest/
+├── 📁 inputs/                          # 입력 데이터
+│   ├── threats.json                    # TARA 공격 시나리오 정의
+│   ├── system_model.json               # 테스트베드 시스템 모델
+│   ├── testbed_config.json            # 테스트베드 설정
+│   ├── nist_800_53_rev5.json          # NIST 보안 컨트롤 데이터베이스
+│   └── jeep_whitepaper_function_level_*.json  # 실제 차량 시나리오
+│
+├── 📁 core_pipeline/                   # 핵심 파이프라인 엔진
+│   ├── pipeline_runner.py             # 메인 실행기 (시작점)
+│   ├── step1_prepare_inputs.py        # 1단계: 입력 데이터 전처리
+│   ├── step2_decompose_attack.py      # 2단계: 공격 시나리오 분해
+│   ├── step3a_bind_controls.py        # 3A단계: 보안 컨트롤 바인딩
+│   ├── step3b_generate_scripts.py     # 3B단계: 테스트 스크립트 생성
+│   ├── step5_assemble_v3.py           # 5단계: 최종 스크립트 어셈블리
+│   ├── llm_enricher.py                # LLM 통신 관리
+│   ├── contract_verifier.py           # 코드 안전성 검증
+│   ├── safety_validator.py            # 보안 유효성 검사
+│   └── pipeline_types.py              # 타입 정의
+│
+├── 📁 examples/                        # 예제 및 테스트
+│   ├── example_run.py                 # 기본 실행 예제
+│   └── test_setup.py                  # 설치 확인 스크립트
+│
+├── 📁 output/                         # 생성된 결과물 (실행시 자동 생성)
+│   └── run_YYYYMMDD_HHMMSS/           # 타임스탬프별 실행 결과
+│       ├── 📁 steps/                  # 개별 테스트 스크립트
+│       │   └── TS_XX_SCENARIO_NAME/
+│       │       └── P_TS_XX_PATH/
+│       │           ├── T1.py          # 1단계 실행 스크립트
+│       │           ├── T2.py          # 2단계 실행 스크립트
+│       │           └── ...
+│       ├── 📁 assembled/              # 통합 실행 스크립트
+│       │   └── TS_XX_*.py            # 완전한 테스트 하네스
+│       └── 📁 cache/                  # LLM 응답 캐시
+│
+├── 📁 docs/                           # 문서
+├── requirements.txt                   # Python 의존성
+├── .gitignore                        # Git 제외 파일
+├── LICENSE                           # MIT 라이선스
+└── CONTRIBUTING.md                   # 기여 가이드
 ```
 
-### Core Components
-- **Step 1**: Parse and normalize TARA input files
-- **Step 2**: Decompose attack trees into execution plans  
-- **Step 3A**: Bind security controls to attack steps (with LLM)
-- **Step 3B**: Generate executable Python scripts (with LLM)
-- **Step 5**: Assemble final test harness
+## 🔄 사용법 가이드: Input → Output
 
-## 📊 Example Output
+### 1️⃣ 입력 준비
 
-### Generated Script Structure
+**필수 입력 파일:**
+- `inputs/threats.json`: TARA 분석에서 도출된 공격 시나리오
+- `inputs/system_model.json`: 테스트베드의 네트워크 토폴로지와 엔드포인트
+
+**예시 - threats.json:**
+```json
+{
+  "scenarios": {
+    "TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET": {
+      "description": "진단 시스템 우회를 통한 ECU 리셋",
+      "attack_paths": [
+        {
+          "path_id": "P_TS_07_DOIP_BYPASS_RESET",
+          "steps": [
+            {"id": "T1", "action": "DoIP 연결 및 라우팅 활성화"},
+            {"id": "T2", "action": "차량 식별 요청"},
+            {"id": "T3", "action": "진단 세션 설정"},
+            {"id": "T4", "action": "ECU 리셋 명령 실행"}
+          ]
+        }
+      ]
+    }
+  }
+}
 ```
-output/
-└── run_20240426_143052/           # Timestamped execution
-    ├── steps/                     # Individual attack steps
-    │   └── TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET/
-    │       └── P_TS_07_DOIP_BYPASS_RESET/
-    │           ├── T1.py          # DoIP connection & routing
-    │           ├── T2.py          # Vehicle ID request
-    │           ├── T3.py          # Diagnostic session setup
-    │           └── T4.py          # ECU reset command
-    ├── assembled/                 # Complete test script
-    │   └── TS_07_..._RESET.py    # 28KB executable script
-    └── cache/                     # LLM response cache
+
+### 2️⃣ 파이프라인 실행
+
+```bash
+# API 키 설정 (LLM 기능 사용시)
+export ANTHROPIC_API_KEY="sk-ant-api-xxxxx"
+
+# 파이프라인 실행
+python core_pipeline/pipeline_runner.py \
+    inputs/threats.json \
+    inputs/system_model.json \
+    output/ \
+    --scenarios TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET
 ```
 
-### Sample Generated Code
+### 3️⃣ 생성되는 결과물
+
+#### 📁 개별 테스트 스크립트 (`output/run_YYYYMMDD_HHMMSS/steps/`)
+
+각 공격 단계별로 실행 가능한 Python 스크립트가 생성됩니다:
+
+**T1.py 예시 (DoIP 연결):**
 ```python
-# T1.py - DoIP Connection & Routing Activation
 import time
 import socket
 from doipclient import DoIPClient
 
 def run_step(context: dict, artifacts: dict) -> dict:
-    # Read endpoint configuration
+    # DoIP 클라이언트 설정
     endpoint = {
         "host": "172.23.96.1",
         "port": 8445,
-        "protocol": "doip_tcp",
-        "doip_version": "0x02",
-        "doip_entity_address": "0x00E0"
+        "protocol": "doip_tcp"
     }
     
-    # Establish DoIP connection with routing activation
+    # 연결 시도
     client = DoIPClient(
         ecu_ip_address=endpoint["host"],
-        ecu_logical_address=int(endpoint["doip_entity_address"], 16),
+        ecu_logical_address=0x00E0,
         tcp_port=endpoint["port"]
     )
     
-    # Return structured observations
+    # 결과 반환
     return {
         "observations": [{"name": "doip_connection", "value": True}],
         "artifacts": {"client": client},
-        "notes": "DoIP routing activation successful"
+        "notes": "DoIP 라우팅 활성화 성공"
     }
+```
+
+#### 📁 통합 실행 스크립트 (`output/run_YYYYMMDD_HHMMSS/assembled/`)
+
+개별 스크립트들이 하나로 통합된 완전한 테스트 하네스:
+
+**TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET__P_TS_07_DOIP_BYPASS_RESET.py**
+- **크기**: ~28KB (약 770라인)
+- **기능**: 전체 공격 시나리오 자동 실행
+- **결과**: JSON 형태의 구조화된 관찰 데이터
+
+#### 📁 실행 증거 자료 (`output/run_YYYYMMDD_HHMMSS/cache/`)
+
+LLM과의 모든 상호작용이 기록되어 재현 가능성을 보장:
+
+```json
+{
+  "request_timestamp": "2026-04-26T17:43:52Z",
+  "model": "claude-3-5-sonnet-20241022",
+  "prompt_hash": "3ebfa7e6267018a8",
+  "response": {
+    "generated_code": "...",
+    "reasoning": "DoIP 프로토콜 특성을 고려하여..."
+  }
+}
+```
+
+### 4️⃣ 결과 활용
+
+#### ✅ 즉시 실행 가능
+```bash
+# 생성된 테스트 스크립트 실행
+cd output/run_20260426_174034/assembled/
+python TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET__P_TS_07_DOIP_BYPASS_RESET.py
+```
+
+#### ✅ 구조화된 결과 데이터
+```json
+{
+  "scenario_id": "TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET",
+  "execution_timestamp": "2026-04-26T17:44:15Z",
+  "results": {
+    "T1": {"success": true, "observations": [...]},
+    "T2": {"success": true, "observations": [...]},
+    "T3": {"success": false, "error": "Authentication required"},
+    "T4": {"skipped": true, "reason": "Previous step failed"}
+  },
+  "evidence": {
+    "network_traffic": "pcap_file_path",
+    "log_files": ["doip_session.log"],
+    "screenshots": ["ecu_response.png"]
+  }
+}
 ```
 
 ## ⚙️ Configuration
@@ -150,16 +242,13 @@ def run_step(context: dict, artifacts: dict) -> dict:
 # Temporary (current session)
 export ANTHROPIC_API_KEY="sk-ant-your-key-here"
 
-# Permanent (Linux/Mac)
-echo 'export ANTHROPIC_API_KEY="sk-ant-your-key-here"' >> ~/.bashrc
-
 # Windows
 setx ANTHROPIC_API_KEY "sk-ant-your-key-here"
 ```
 
 ### Command Line Options
 ```bash
-python pipeline_runner.py [threats] [system_model] [output] [options]
+python core_pipeline/pipeline_runner.py [threats] [system_model] [output] [options]
 
 Options:
   --scenarios SCENARIO [SCENARIO ...]   Target specific scenarios
@@ -170,125 +259,38 @@ Options:
   --help                                Show help message
 ```
 
-## 🔒 Security & Ethics
+## 🔒 보안 및 윤리적 사용
 
-### ⚠️ Important Usage Guidelines
+### ⚠️ 중요 사용 지침
+- ✅ **승인된 테스팅만**: 소유하거나 명시적 허가를 받은 시스템에서만 사용
+- ✅ **연구 및 방어 목적**: 교육 연구 및 방어적 보안 테스팅
+- ✅ **법규 준수**: 현지 법률 및 규정 준수
+- ❌ **악의적 사용 금지**: 무단 접근이나 악의적 목적으로 사용 금지
 
-- ✅ **Authorized Testing Only**: Use only on systems you own or have explicit permission to test
-- ✅ **Research & Defense**: Educational research and defensive security testing
-- ✅ **Compliance**: Ensure compliance with local laws and regulations
-- ❌ **No Malicious Use**: Never use for unauthorized access or malicious purposes
+## 🛠️ 문제 해결
 
-### Data Privacy
-- API keys are used only for LLM script generation
-- No vehicle data or test results are transmitted to external services
-- All generated scripts run locally in your environment
-
-## 📈 Performance & Costs
-
-### Execution Metrics
-- **Setup Time**: < 1 minute
-- **Script Generation**: 2-5 minutes per scenario (with LLM)
-- **Stub Mode**: < 30 seconds per scenario
-- **Memory Usage**: < 500MB typical
-
-### LLM Costs (Approximate)
-- **Single Scenario**: $0.01-0.05
-- **Complete Test Suite (8 scenarios)**: $0.10-0.40
-- **Stub Mode**: $0.00 (free)
-
-## 🛠️ Development
-
-### Project Structure
-```
-├── pipeline_runner.py          # Main orchestrator
-├── step1_prepare_inputs.py     # Input parsing
-├── step2_decompose_attack.py   # Attack decomposition  
-├── step3a_bind_controls.py     # Control binding
-├── step3b_generate_scripts.py  # Script generation
-├── step5_assemble_v3.py        # Final assembly
-├── pipeline_types.py           # Type definitions
-├── contract_verifier.py        # Code safety validation
-├── safety_validator.py         # Security validation
-├── library_researcher.py       # Real-time library research
-└── inputs/                     # Sample TARA files
-    ├── threats.json           # Attack tree definitions
-    └── system_model.json      # Testbed configuration
-```
-
-### Adding New Scenarios
-1. Define attack tree in `threats.json`
-2. Configure endpoints in `system_model.json`  
-3. Run pipeline to generate scripts
-4. Validate generated code
-
-### Contributing
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and test thoroughly
-4. Commit: `git commit -m 'Add amazing feature'`
-5. Push: `git push origin feature/amazing-feature`
-6. Open a Pull Request
-
-## 🔧 Troubleshooting
-
-### Common Issues
+### 일반적인 문제들
 
 **Import Errors**
 ```bash
-ModuleNotFoundError: No module named 'pipeline_types'
-# Solution: Ensure you're in the project directory
-cd tara-pipeline
-python pipeline_runner.py ...
+ModuleNotFoundError: No module named 'core_pipeline'
+# 해결방법: 프로젝트 루트 디렉토리에서 실행
+cd TARATest
+python core_pipeline/pipeline_runner.py ...
 ```
 
 **API Key Errors**  
 ```bash
 Error: No API key provided
-# Solution: Set environment variable or use --no-llm
+# 해결방법: 환경변수 설정 또는 --no-llm 사용
 export ANTHROPIC_API_KEY="your-key"
-# OR
-python pipeline_runner.py ... --no-llm
+# 또는
+python core_pipeline/pipeline_runner.py ... --no-llm
 ```
-
-**Permission Errors**
-```bash
-PermissionError: [Errno 13] Permission denied: 'output'  
-# Solution: Check output directory permissions
-chmod 755 output/
-# OR use different output directory
-python pipeline_runner.py ... different_output/
-```
-
-### Getting Help
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/tara-pipeline/issues)
-- 💬 **Questions**: [GitHub Discussions](https://github.com/yourusername/tara-pipeline/discussions)
-- 📧 **Security Issues**: security@yourorganization.com
-
-## 📚 References
-
-- [ISO/SAE 21434](https://www.iso.org/standard/70918.html) - Cybersecurity Engineering
-- [NIST SP 800-53](https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final) - Security Controls
-- [Miller & Valasek Research](http://illmatics.com/Remote%20Car%20Hacking.pdf) - Original Cherokee Research
-- [Anthropic Claude](https://www.anthropic.com/claude) - LLM Provider
-
-## 🏆 Acknowledgments
-
-- **Miller & Valasek**: Original automotive security research
-- **Anthropic**: Claude LLM for intelligent code generation
-- **Open Source Community**: Libraries and tools that make this possible
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-<div align="center">
-<b>⭐ Star this repository if you find it useful!</b><br>
-<b>🐛 Report bugs and 💡 suggest features via GitHub Issues</b><br>
-<b>🤝 Contributions are welcome - see CONTRIBUTING.md</b>
-</div>
 
 ---
 
