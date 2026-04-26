@@ -22,20 +22,24 @@ python examples/test_setup.py
 # Run without LLM (stub mode) 
 python examples/example_run.py
 
-# Run with LLM features
+# Run with LLM features (필수)
 export ANTHROPIC_API_KEY="your-api-key"
-python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.json output/
+python core_pipeline/pipeline_runner.py [threats.json] [system_model.json] [output_directory]/
+
+# Input 구조 (and/or)
+python core_pipeline/pipeline_runner.py threats.json system_model.json output/
+python core_pipeline/pipeline_runner.py threats.json testbed_config.json output/
 ```
 
 ### 3. Target Specific Scenarios
 ```bash
 # Generate scripts for specific attack scenarios
 python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.json output/ \
-  --scenarios TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET
+  --scenarios [시나리오_이름]
 
 # Multiple scenarios
 python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.json output/ \
-  --scenarios TS_04_SAFETY_CRITICAL_CAN_INJECTION TS_05_COMFORT_BUS_INJECTION
+  --scenarios [시나리오_이름1] [시나리오_이름2]
 ```
 
 ## 📋 프로젝트 소개
@@ -43,18 +47,16 @@ python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.
 **TARA Pipeline**은 자동차 보안 위험 분석(TARA)에서 생성된 공격 트리를 실제 실행 가능한 보안 테스트 스크립트로 자동 변환하는 연구 프로젝트입니다.
 
 ### 🔬 연구 목표
-ISO/SAE 21434 표준에 따른 TARA 분석 결과를 바탕으로, 실제 테스트베드에서 실행 가능한 침투 테스트 스크립트를 자동 생성하여 자동차 보안 테스팅의 효율성을 극대화합니다.
+TARA 분석 결과를 바탕으로, 실제 테스트베드에서 실행 가능한 침투 테스트 스크립트를 자동 생성하여 자동차 보안 테스팅의 효율성을 극대화합니다.
 
 ## 📁 프로젝트 구조
 
 ```
 📁 TARATest/
-├── 📁 inputs/                          # 입력 데이터
-│   ├── threats.json                    # TARA 공격 시나리오 정의
-│   ├── system_model.json               # 테스트베드 시스템 모델
-│   ├── testbed_config.json            # 테스트베드 설정
-│   ├── nist_800_53_rev5.json          # NIST 보안 컨트롤 데이터베이스
-│   └── jeep_whitepaper_function_level_*.json  # 실제 차량 시나리오
+├── 📁 inputs/                          # 입력 데이터 (필수)
+│   ├── threats.json                    # TARA 공격 시나리오 정의 (필수)
+│   ├── system_model.json               # 테스트베드 시스템 모델 (필수 or)
+│   └── testbed_config.json            # 테스트베드 설정 (필수 or)
 │
 ├── 📁 core_pipeline/                   # 핵심 파이프라인 엔진
 │   ├── pipeline_runner.py             # 메인 실행기 (시작점)
@@ -75,13 +77,13 @@ ISO/SAE 21434 표준에 따른 TARA 분석 결과를 바탕으로, 실제 테스
 ├── 📁 output/                         # 생성된 결과물 (실행시 자동 생성)
 │   └── run_YYYYMMDD_HHMMSS/           # 타임스탬프별 실행 결과
 │       ├── 📁 steps/                  # 개별 테스트 스크립트
-│       │   └── TS_XX_SCENARIO_NAME/
-│       │       └── P_TS_XX_PATH/
+│       │   └── [시나리오이름]/
+│       │       └── [경로이름]/
 │       │           ├── T1.py          # 1단계 실행 스크립트
 │       │           ├── T2.py          # 2단계 실행 스크립트
 │       │           └── ...
 │       ├── 📁 assembled/              # 통합 실행 스크립트
-│       │   └── TS_XX_*.py            # 완전한 테스트 하네스
+│       │   └── [시나리오이름]__[경로이름].py
 │       └── 📁 cache/                  # LLM 응답 캐시
 │
 └── .gitignore                        # Git 제외 파일
@@ -92,43 +94,26 @@ ISO/SAE 21434 표준에 따른 TARA 분석 결과를 바탕으로, 실제 테스
 ### 1️⃣ 입력 준비
 
 **필수 입력 파일:**
-- `inputs/threats.json`: TARA 분석에서 도출된 공격 시나리오
-- `inputs/system_model.json`: 테스트베드의 네트워크 토폴로지와 엔드포인트
+- `threats.json`: TARA 분석에서 도출된 공격 시나리오 (필수)
+- `system_model.json` OR `testbed_config.json`: 테스트베드의 네트워크 토폴로지와 엔드포인트
 
-**예시 - threats.json:**
-```json
-{
-  "scenarios": {
-    "TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET": {
-      "description": "진단 시스템 우회를 통한 ECU 리셋",
-      "attack_paths": [
-        {
-          "path_id": "P_TS_07_DOIP_BYPASS_RESET",
-          "steps": [
-            {"id": "T1", "action": "DoIP 연결 및 라우팅 활성화"},
-            {"id": "T2", "action": "차량 식별 요청"},
-            {"id": "T3", "action": "진단 세션 설정"},
-            {"id": "T4", "action": "ECU 리셋 명령 실행"}
-          ]
-        }
-      ]
-    }
-  }
-}
-```
+**threats.json 구조:**
+- scenarios: 공격 시나리오 정의
+- attack_paths: 공격 경로와 단계별 액션
+- steps: 각 단계별 실행할 작업
 
 ### 2️⃣ 파이프라인 실행
 
 ```bash
-# API 키 설정 (LLM 기능 사용시)
-export ANTHROPIC_API_KEY="sk-ant-api-xxxxx"
+# API 키 설정 (LLM 기능 사용시 필수)
+export ANTHROPIC_API_KEY="your-api-key"
 
 # 파이프라인 실행
 python core_pipeline/pipeline_runner.py \
-    inputs/threats.json \
-    inputs/system_model.json \
-    output/ \
-    --scenarios TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET
+    [threats.json] \
+    [system_model.json] \
+    [output_directory]/ \
+    --scenarios [시나리오_이름]
 ```
 
 ### 3️⃣ 생성되는 결과물
@@ -136,60 +121,24 @@ python core_pipeline/pipeline_runner.py \
 #### 📁 개별 테스트 스크립트 (`output/run_YYYYMMDD_HHMMSS/steps/`)
 
 각 공격 단계별로 실행 가능한 Python 스크립트가 생성됩니다:
-
-**T1.py 예시 (DoIP 연결):**
-```python
-import time
-import socket
-from doipclient import DoIPClient
-
-def run_step(context: dict, artifacts: dict) -> dict:
-    # DoIP 클라이언트 설정
-    endpoint = {
-        "host": "172.23.96.1",
-        "port": 8445,
-        "protocol": "doip_tcp"
-    }
-    
-    # 연결 시도
-    client = DoIPClient(
-        ecu_ip_address=endpoint["host"],
-        ecu_logical_address=0x00E0,
-        tcp_port=endpoint["port"]
-    )
-    
-    # 결과 반환
-    return {
-        "observations": [{"name": "doip_connection", "value": True}],
-        "artifacts": {"client": client},
-        "notes": "DoIP 라우팅 활성화 성공"
-    }
-```
+- T1.py, T2.py, T3.py... 형태로 순차 실행 스크립트
+- 각 스크립트는 독립적으로 실행 가능
+- run_step() 함수로 표준화된 인터페이스 제공
 
 #### 📁 통합 실행 스크립트 (`output/run_YYYYMMDD_HHMMSS/assembled/`)
 
 개별 스크립트들이 하나로 통합된 완전한 테스트 하네스:
-
-**TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET__P_TS_07_DOIP_BYPASS_RESET.py**
-- **크기**: ~28KB (약 770라인)
+- **파일명**: [시나리오이름]__[경로이름].py 형태
 - **기능**: 전체 공격 시나리오 자동 실행
 - **결과**: JSON 형태의 구조화된 관찰 데이터
 
 #### 📁 실행 증거 자료 (`output/run_YYYYMMDD_HHMMSS/cache/`)
 
 LLM과의 모든 상호작용이 기록되어 재현 가능성을 보장:
-
-```json
-{
-  "request_timestamp": "2026-04-26T17:43:52Z",
-  "model": "claude-3-5-sonnet-20241022",
-  "prompt_hash": "3ebfa7e6267018a8",
-  "response": {
-    "generated_code": "...",
-    "reasoning": "DoIP 프로토콜 특성을 고려하여..."
-  }
-}
-```
+- request_timestamp: 요청 시점
+- model: 사용된 LLM 모델
+- prompt_hash: 프롬프트 해시값  
+- response: 생성된 코드와 추론 과정
 
 ### 4️⃣ 결과 활용
 
