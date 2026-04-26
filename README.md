@@ -1,9 +1,5 @@
 # 🚗 TARA Pipeline: Automotive Security Test Generator
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-
 > **Transform TARA attack trees into executable automotive security test scripts with AI-powered code generation**
 
 ## 🚀 Quick Start
@@ -16,7 +12,6 @@
 ```bash
 git clone https://github.com/sungchaemin/TARATest.git
 cd TARATest
-pip install -r requirements.txt  # Optional dependencies
 ```
 
 ### 2. Basic Usage
@@ -46,13 +41,6 @@ python core_pipeline/pipeline_runner.py inputs/threats.json inputs/system_model.
 ## 📋 프로젝트 소개
 
 **TARA Pipeline**은 자동차 보안 위험 분석(TARA)에서 생성된 공격 트리를 실제 실행 가능한 보안 테스트 스크립트로 자동 변환하는 연구 프로젝트입니다.
-
-### 🎯 핵심 기능
-- **AI 기반 코드 생성**: Claude Sonnet LLM을 활용한 지능형 테스트 스크립트 자동 생성
-- **실제 프로토콜 지원**: DoIP, CAN, D-Bus, SOME/IP 등 자동차 통신 프로토콜 완전 지원
-- **보안 표준 준수**: NIST SP 800-53, Common Criteria 보안 컨트롤과 자동 매핑
-- **실시간 연구**: 최신 라이브러리 자동 탐색 및 엔드포인트 해석
-- **타임스탬프 보존**: 모든 실행 결과와 증거 자료 자동 보관
 
 ### 🔬 연구 목표
 ISO/SAE 21434 표준에 따른 TARA 분석 결과를 바탕으로, 실제 테스트베드에서 실행 가능한 침투 테스트 스크립트를 자동 생성하여 자동차 보안 테스팅의 효율성을 극대화합니다.
@@ -96,11 +84,7 @@ ISO/SAE 21434 표준에 따른 TARA 분석 결과를 바탕으로, 실제 테스
 │       │   └── TS_XX_*.py            # 완전한 테스트 하네스
 │       └── 📁 cache/                  # LLM 응답 캐시
 │
-├── 📁 docs/                           # 문서
-├── requirements.txt                   # Python 의존성
-├── .gitignore                        # Git 제외 파일
-├── LICENSE                           # MIT 라이선스
-└── CONTRIBUTING.md                   # 기여 가이드
+└── .gitignore                        # Git 제외 파일
 ```
 
 ## 🔄 사용법 가이드: Input → Output
@@ -210,30 +194,10 @@ LLM과의 모든 상호작용이 기록되어 재현 가능성을 보장:
 ### 4️⃣ 결과 활용
 
 #### ✅ 즉시 실행 가능
-```bash
-# 생성된 테스트 스크립트 실행
-cd output/run_20260426_174034/assembled/
-python TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET__P_TS_07_DOIP_BYPASS_RESET.py
-```
+생성된 assembled 폴더의 통합 스크립트를 바로 실행할 수 있습니다.
 
 #### ✅ 구조화된 결과 데이터
-```json
-{
-  "scenario_id": "TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET",
-  "execution_timestamp": "2026-04-26T17:44:15Z",
-  "results": {
-    "T1": {"success": true, "observations": [...]},
-    "T2": {"success": true, "observations": [...]},
-    "T3": {"success": false, "error": "Authentication required"},
-    "T4": {"skipped": true, "reason": "Previous step failed"}
-  },
-  "evidence": {
-    "network_traffic": "pcap_file_path",
-    "log_files": ["doip_session.log"],
-    "screenshots": ["ecu_response.png"]
-  }
-}
-```
+실행 결과는 JSON 형태로 관찰 데이터와 증거 자료가 포함됩니다.
 
 ## ⚙️ Configuration
 
@@ -258,39 +222,6 @@ Options:
   --no-timestamp                        Disable timestamped folders
   --help                                Show help message
 ```
-
-## 🔒 보안 및 윤리적 사용
-
-### ⚠️ 중요 사용 지침
-- ✅ **승인된 테스팅만**: 소유하거나 명시적 허가를 받은 시스템에서만 사용
-- ✅ **연구 및 방어 목적**: 교육 연구 및 방어적 보안 테스팅
-- ✅ **법규 준수**: 현지 법률 및 규정 준수
-- ❌ **악의적 사용 금지**: 무단 접근이나 악의적 목적으로 사용 금지
-
-## 🛠️ 문제 해결
-
-### 일반적인 문제들
-
-**Import Errors**
-```bash
-ModuleNotFoundError: No module named 'core_pipeline'
-# 해결방법: 프로젝트 루트 디렉토리에서 실행
-cd TARATest
-python core_pipeline/pipeline_runner.py ...
-```
-
-**API Key Errors**  
-```bash
-Error: No API key provided
-# 해결방법: 환경변수 설정 또는 --no-llm 사용
-export ANTHROPIC_API_KEY="your-key"
-# 또는
-python core_pipeline/pipeline_runner.py ... --no-llm
-```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
