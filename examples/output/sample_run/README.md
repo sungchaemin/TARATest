@@ -32,10 +32,3 @@ python examples/output/sample_run/assembled/TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESE
 # 개별 단계 실행
 python examples/output/sample_run/steps/TS_07_DIAGNOSTIC_BYPASS_AND_ECU_RESET/P_TS_07_DOIP_BYPASS_RESET/T1.py
 ```
-
-## 📋 특징
-
-- **실제 DoIP 라이브러리 사용**: `doipclient` 기반
-- **testbed_config 자동 주입**: `172.23.96.1:8445` 엔드포인트
-- **Control-free**: NIST SP 800-53 보안 컨트롤 제거
-- **Raw attack data**: 순수 공격 관찰 데이터만 수집
